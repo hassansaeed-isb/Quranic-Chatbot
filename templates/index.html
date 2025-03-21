@@ -1,0 +1,122 @@
+<!-- File: templates/index.html -->
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قرآنی سوال و جواب</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>قرآنی سوال و جواب</h1>
+            <p class="subtitle">قرآن پاک سے متعلق سوالات کے جوابات حاصل کریں</p>
+        </header>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    <div class="message-content">
+                        <p>السلام علیکم! میں آپ کی قرآن کے بارے میں سوالات کے جوابات دینے کے لئے حاضر ہوں۔</p>
+                        <p>آپ مجھ سے قرآن کے بارے میں کوئی سوال پوچھ سکتے ہیں۔ اگر آپ بات ختم کرنا چاہتے ہیں تو 'اللہ حافظ ,ختم' لکھیں۔</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input">
+                <input type="text" id="user-message" placeholder="اپنا سوال یہاں لکھیں...">
+                <button id="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="suggestions">
+            <h3>مجوزہ سوالات</h3>
+            <div class="suggestion-buttons">
+                <button class="suggestion-btn">قرآن کتنے پاروں پر مشتمل ہے</button>
+                <button class="suggestion-btn">قرآن میں کتنی سورتیں ہیں</button>
+                <button class="suggestion-btn">سب سے طویل سورۃ کون سی ہے</button>
+                <button class="suggestion-btn">قرآن میں نماز کا ذکر کتنی بار آیا ہے</button>
+                <button class="suggestion-btn">قرآن میں سب سے زیادہ کس نبی کا ذکر آیا ہے</button>
+            </div>
+        </div>
+        
+        <div class="categories">
+            <h3>زمرہ جات</h3>
+            <div class="category-buttons">
+                <button class="category-btn" data-category="structure">قرآن کی ساخت</button>
+                <button class="category-btn" data-category="prophets">انبیاء کرام</button>
+                <button class="category-btn" data-category="pillars">ارکان اسلام</button>
+                <button class="category-btn" data-category="revelation">وحی</button>
+                <button class="category-btn" data-category="history">تاریخ</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 قرآنی سوال و جواب - تمام حقوق محفوظ ہیں</p>
+        </footer>
+    </div>
+    
+    <div class="category-modal" id="category-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3 id="modal-title">سوالات</h3>
+            <div class="modal-questions" id="modal-questions"></div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
+
+<!-- File: templates/about.html -->
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ہمارے بارے میں - قرآنی سوال و جواب</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ہمارے بارے میں</h1>
+            <p class="subtitle">قرآنی سوال و جواب کے متعلق</p>
+            <a href="/" class="back-button"><i class="fas fa-arrow-right"></i> واپس جائیں</a>
+        </header>
+        
+        <div class="about-content">
+            <div class="about-section">
+                <h2>ہمارا مقصد</h2>
+                <p>قرآنی سوال و جواب ایک ایسا پلیٹ فارم ہے جو قرآن پاک سے متعلق معلومات کو آسانی سے دستیاب کرنے کے لیے بنایا گیا ہے۔ ہمارا مقصد لوگوں کو قرآن پاک کے بارے میں معلومات فراہم کرنا ہے تاکہ وہ اسلام کی مقدس کتاب کو بہتر طور پر سمجھ سکیں۔</p>
+            </div>
+            
+            <div class="about-section">
+                <h2>ہماری معلومات کا ذریعہ</h2>
+                <p>ہماری معلومات قرآن پاک، احادیث، اور معتبر اسلامی کتب سے اخذ کی گئی ہیں۔ ہم ہمیشہ کوشش کرتے ہیں کہ درست اور موثق معلومات فراہم کریں۔</p>
+            </div>
+            
+            <div class="about-section">
+                <h2>رابطہ</h2>
+                <p>اگر آپ کوئی تجویز یا سوال رکھتے ہیں، تو ہمارے ساتھ رابطہ کریں:</p>
+                <p><i class="fas fa-envelope"></i> info@quranicqa.com</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 قرآنی سوال و جواب - تمام حقوق محفوظ ہیں</p>
+        </footer>
+    </div>
+</body>
+</html>
