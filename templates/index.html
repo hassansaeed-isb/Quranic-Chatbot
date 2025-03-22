@@ -1,36 +1,62 @@
-<!-- File: templates/index.html -->
+<!-- File: templates/enhanced-index.html -->
 <!DOCTYPE html>
 <html lang="ur" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>قرآنی سوال و جواب</title>
+    <meta name="description" content="قرآن پاک سے متعلق سوالات کے جوابات حاصل کریں">
+    <meta name="theme-color" content="#1e6641">
+    <title>قرآنی سوال و جواب | Quranic Questions and Answers</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Add page transition animations -->
+    <style>
+        .page-transition {
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
+<body class="dark-mode-supported">
+    <!-- Loading overlay for transitions -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container page-transition">
         <header>
             <h1>قرآنی سوال و جواب</h1>
             <p class="subtitle">قرآن پاک سے متعلق سوالات کے جوابات حاصل کریں</p>
         </header>
         
+        <!-- Daily Fact Section -->
+        <div class="daily-fact" id="daily-fact"></div>
+        
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
-                <div class="message bot">
-                    <div class="message-content">
-                        <p>السلام علیکم! میں آپ کی قرآن کے بارے میں سوالات کے جوابات دینے کے لئے حاضر ہوں۔</p>
-                        <p>آپ مجھ سے قرآن کے بارے میں کوئی سوال پوچھ سکتے ہیں۔ اگر آپ بات ختم کرنا چاہتے ہیں تو 'اللہ حافظ ,ختم' لکھیں۔</p>
-                    </div>
-                </div>
+                <!-- Messages will be added here dynamically -->
+            </div>
+            
+            <!-- Scroll indicator that appears when there are new messages -->
+            <div class="scroll-indicator" id="scroll-indicator" title="نئے جواب کی طرف اسکرول کریں">
+                <i class="fas fa-chevron-down"></i>
             </div>
             
             <div class="chat-input">
-                <input type="text" id="user-message" placeholder="اپنا سوال یہاں لکھیں...">
-                <button id="send-button">
+                <div class="input-wrapper">
+                    <input type="text" id="user-message" placeholder=" " autocomplete="off">
+                    <label for="user-message" class="floating-label">اپنا سوال یہاں لکھیں...</label>
+                </div>
+                <!-- Voice input button will be added dynamically if supported -->
+                <button id="send-button" title="بھیجیں">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
@@ -50,73 +76,67 @@
         <div class="categories">
             <h3>زمرہ جات</h3>
             <div class="category-buttons">
-                <button class="category-btn" data-category="structure">قرآن کی ساخت</button>
-                <button class="category-btn" data-category="prophets">انبیاء کرام</button>
-                <button class="category-btn" data-category="pillars">ارکان اسلام</button>
-                <button class="category-btn" data-category="revelation">وحی</button>
-                <button class="category-btn" data-category="history">تاریخ</button>
+                <button class="category-btn" data-category="structure"><i class="fas fa-book"></i> قرآن کی ساخت</button>
+                <button class="category-btn" data-category="prophets"><i class="fas fa-user"></i> انبیاء کرام</button>
+                <button class="category-btn" data-category="pillars"><i class="fas fa-mosque"></i> ارکان اسلام</button>
+                <button class="category-btn" data-category="revelation"><i class="fas fa-scroll"></i> وحی</button>
+                <button class="category-btn" data-category="history"><i class="fas fa-history"></i> تاریخ</button>
             </div>
         </div>
         
         <footer>
-            <p>© 2025 قرآنی سوال و جواب - تمام حقوق محفوظ ہیں</p>
+            <p>info@hubbulquran.com.pk</p>
         </footer>
     </div>
     
     <div class="category-modal" id="category-modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <span class="close-modal" title="بند کریں">&times;</span>
             <h3 id="modal-title">سوالات</h3>
-            <div class="modal-questions" id="modal-questions"></div>
+            <div class="modal-questions" id="modal-questions">
+                <!-- Questions will be added here dynamically -->
+            </div>
         </div>
     </div>
     
+ 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
-
-<!-- File: templates/about.html -->
-<!DOCTYPE html>
-<html lang="ur" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ہمارے بارے میں - قرآنی سوال و جواب</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>ہمارے بارے میں</h1>
-            <p class="subtitle">قرآنی سوال و جواب کے متعلق</p>
-            <a href="/" class="back-button"><i class="fas fa-arrow-right"></i> واپس جائیں</a>
-        </header>
-        
-        <div class="about-content">
-            <div class="about-section">
-                <h2>ہمارا مقصد</h2>
-                <p>قرآنی سوال و جواب ایک ایسا پلیٹ فارم ہے جو قرآن پاک سے متعلق معلومات کو آسانی سے دستیاب کرنے کے لیے بنایا گیا ہے۔ ہمارا مقصد لوگوں کو قرآن پاک کے بارے میں معلومات فراہم کرنا ہے تاکہ وہ اسلام کی مقدس کتاب کو بہتر طور پر سمجھ سکیں۔</p>
-            </div>
+    <script>
+        // Initialize page transitions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for dark mode preference
+            const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
             
-            <div class="about-section">
-                <h2>ہماری معلومات کا ذریعہ</h2>
-                <p>ہماری معلومات قرآن پاک، احادیث، اور معتبر اسلامی کتب سے اخذ کی گئی ہیں۔ ہم ہمیشہ کوشش کرتے ہیں کہ درست اور موثق معلومات فراہم کریں۔</p>
-            </div>
+            // Listen for dark mode changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (e.matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            });
             
-            <div class="about-section">
-                <h2>رابطہ</h2>
-                <p>اگر آپ کوئی تجویز یا سوال رکھتے ہیں، تو ہمارے ساتھ رابطہ کریں:</p>
-                <p><i class="fas fa-envelope"></i> info@quranicqa.com</p>
-            </div>
-        </div>
-        
-        <footer>
-            <p>© 2025 قرآنی سوال و جواب - تمام حقوق محفوظ ہیں</p>
-        </footer>
-    </div>
+            // Add event listeners to handle link clicks for smooth transitions
+            document.querySelectorAll('a').forEach(link => {
+                if (link.href && !link.href.startsWith('#') && !link.getAttribute('target')) {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetUrl = this.href;
+                        
+                        // Show loading overlay
+                        document.getElementById('loading-overlay').classList.add('show');
+                        
+                        // Navigate after a short delay
+                        setTimeout(() => {
+                            window.location.href = targetUrl;
+                        }, 300);
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

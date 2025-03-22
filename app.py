@@ -5,6 +5,8 @@ Flask backend for the Quranic Q&A system
 """
 
 from flask import Flask, render_template, request, jsonify
+import random
+import time
 
 app = Flask(__name__)
 
@@ -242,11 +244,32 @@ def normalize(text):
 
 def find_answer(user_input, qa_pairs):
     """Find an appropriate answer based on keywords."""
+    best_match = None
+    match_count = 0
+    
     for question, details in qa_pairs.items():
+        current_matches = 0
         for keyword in details["keywords"]:
             if keyword in user_input:
-                return details["answer"]
-    return None
+                current_matches += 1
+        
+        if current_matches > match_count:
+            match_count = current_matches
+            best_match = details
+    
+    return best_match
+
+# Daily Quranic facts
+def get_random_fact():
+    facts = [
+        "سورۃ الکوثر قرآن کی سب سے چھوٹی سورت ہے، اس میں صرف 3 آیات ہیں۔",
+        "قرآن میں 'بسم اللہ الرحمن الرحیم' 114 بار آتا ہے (ہر سورت کے شروع میں، سوائے سورۃ التوبہ کے)۔",
+        "قرآن کی آیت الکرسی (سورۃ البقرہ، آیت 255) کو قرآن کی سب سے عظیم آیت سمجھا جاتا ہے۔",
+        "قرآن میں 30 پارے، 114 سورتیں، 558 رکوع اور 6236 آیات ہیں۔",
+        "حضرت محمد ﷺ پر پہلی وحی غارِ حرا میں نازل ہوئی تھی۔",
+        "قرآن میں سب سے زیادہ ذکر حضرت موسیٰ علیہ السلام کا آیا ہے۔"
+    ]
+    return random.choice(facts)
 
 @app.route('/')
 def home():
@@ -258,24 +281,53 @@ def ask():
     """Process the user's question and return an answer"""
     user_input = request.json.get('question', '')
     
+    # Add slight delay to simulate thinking (optional)
+    time.sleep(0.5)
+    
     # Exit condition check
-    if user_input == "اللہ حافظ ,ختم":
-        return jsonify({'answer': "اللہ حافظ! دوبارہ بات کرنے کا شکریہ۔", 'farewell': True})
+    if user_input == "اللہ حافظ ,ختم" or "اللہ حافظ" in user_input:
+        return jsonify({
+            'answer': "اللہ حافظ! دوبارہ بات کرنے کا شکریہ۔", 
+            'farewell': True
+        })
+    
+    # Handle greetings
+    greetings = ["السلام علیکم", "سلام", "آداب", "ہیلو", "ہائے", "ہاے"]
+    for greeting in greetings:
+        if greeting in user_input.lower():
+            return jsonify({
+                'answer': "وعلیکم السلام! میں آپ کی قرآن سے متعلق سوالات کے جوابات دینے کے لیے حاضر ہوں۔ کیا آپ کوئی خاص سوال پوچھنا چاہتے ہیں؟",
+                'suggestions': ["قرآن کتنے پاروں پر مشتمل ہے", "قرآن میں کتنی سورتیں ہیں"]
+            })
+    
+    # Thank you responses
+    thanks = ["شکریہ", "مہربانی", "احسان"]
+    for thank in thanks:
+        if thank in user_input.lower():
+            return jsonify({
+                'answer': "آپ کا شکریہ! میں آپ کی مدد کرکے خوش ہوں۔ کیا آپ کچھ اور پوچھنا چاہیں گے؟",
+                'suggestions': ["ہاں", "نہیں، اللہ حافظ"]
+            })
     
     # Normalize input and find answer
     normalized_input = normalize(user_input)
     qa_pairs = load_qa_pairs()
-    response = find_answer(normalized_input, qa_pairs)
+    match = find_answer(normalized_input, qa_pairs)
     
-    if response:
-        return jsonify({'answer': response})
+    if match:
+        # Return answer with related questions as suggestions
+        return jsonify({
+            'answer': match["answer"],
+            'suggestions': match.get("related", [])
+        })
     else:
-        return jsonify({'answer': "معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔ برائے مہربانی کوئی اور سوال پوچھیں۔"})
+        # If no direct match found
+        return jsonify({
+            'answer': "معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔ برائے مہربانی قرآن سے متعلق کوئی اور سوال پوچھیں۔",
+            'fact': get_random_fact(),
+            'suggestions': ["قرآن کتنے پاروں پر مشتمل ہے", "قرآن میں کتنی سورتیں ہیں"]
+        })
 
-@app.route('/about')
-def about():
-    """Render the about page"""
-    return render_template('about.html')
 
 @app.route('/popular-questions')
 def popular_questions():
@@ -288,6 +340,57 @@ def popular_questions():
         "قرآن میں سب سے زیادہ کس نبی کا ذکر آیا ہے"
     ]
     return jsonify({'questions': popular})
+
+@app.route('/daily-fact')
+def daily_fact():
+    """Return a random Quranic fact"""
+    return jsonify({'fact': get_random_fact()})
+
+@app.route('/categories')
+def get_categories():
+    """Return categories and their questions"""
+    categories = {
+        "structure": {
+            "title": "قرآن کی ساخت",
+            "icon": "fa-book",
+            "questions": [
+                "قرآن کتنے پاروں پر مشتمل ہے",
+                "قرآن میں کتنی سورتیں ہیں",
+                "سب سے طویل سورۃ کون سی ہے",
+                "سب سے چھوٹی سورۃ کون سی ہے"
+            ]
+        },
+        "prophets": {
+            "title": "انبیاء کرام",
+            "icon": "fa-user",
+            "questions": [
+                "قرآن میں سب سے زیادہ ذکر کس نبی کا آیا ہے",
+                "قرآن میں کتنی بار محمد ﷺ کا ذکر آیا ہے",
+                "قرآن میں کتنی بار حضرت عیسیٰ علیہ السلام کا ذکر آیا ہے"
+            ]
+        },
+        "pillars": {
+            "title": "ارکان اسلام",
+            "icon": "fa-mosque",
+            "questions": [
+                "قرآن میں نماز کا ذکر کتنی بار آیا ہے",
+                "قرآن میں روزے کا ذکر کتنی بار آیا ہے",
+                "قرآن میں حج کا ذکر کتنی بار آیا ہے",
+                "قرآن میں زکوٰۃ کا ذکر کتنی بار آیا ہے"
+            ]
+        },
+        "revelation": {
+            "title": "وحی",
+            "icon": "fa-scroll",
+            "questions": [
+                "قرآن میں سب سے پہلے نازل ہونے والی آیت کون سی ہے",
+                "سب سے پہلی وحی کون سی تھی",
+                "سب سے پہلی وحی کہاں نازل ہوئی"
+            ]
+        }
+    }
+    return jsonify(categories)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
