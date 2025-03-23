@@ -107,6 +107,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    HEAD
+
+    // Function to copy message text to clipboard
+    function copyMessageText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Show success message
+            const copySuccess = document.querySelector('.copy-success');
+            if (copySuccess) {
+                copySuccess.classList.add('show');
+                setTimeout(() => {
+                    copySuccess.classList.remove('show');
+                }, 2000);
+            }
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
+    
+    // Function to add emoji reactions
+    function addEmojiReactions(messageElement) {
+        const reactions = document.createElement('div');
+        reactions.className = 'emoji-reactions';
+        
+        // Add some emoji reactions
+        const emojis = ['❤️',];
+        
+        emojis.forEach(emoji => {
+            const emojiSpan = document.createElement('span');
+            emojiSpan.className = 'emoji-reaction';
+            emojiSpan.textContent = emoji;
+            emojiSpan.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+            reactions.appendChild(emojiSpan);
+        });
+        
+        messageElement.appendChild(reactions);
+    }
+    
+
     // Variable to store current suggestions
     let currentSuggestions = null;
     
