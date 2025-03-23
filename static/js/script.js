@@ -1,5 +1,3 @@
-// Complete Enhanced JavaScript with improved UX features
-
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const chatMessages = document.getElementById('chat-messages');
@@ -15,9 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const scrollIndicator = document.getElementById('scroll-indicator');
     
     // Animation settings
-    const typingSpeed = 20; // ms per character for typing animation
+    const typingSpeed = 15; // ms per character for typing animation (slightly faster)
     
-    // Chat history
+    // Chat history (limiting to just what we need)
     let chatHistory = [];
     
     // Track last bot message element for scrolling purposes
@@ -26,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Track if user has scrolled up
     let userHasScrolledUp = false;
     
-    // Add scroll to top button
+    // Add scroll to top button (simplified)
     const scrollTopButton = document.createElement('button');
     scrollTopButton.id = 'scroll-top-btn';
     scrollTopButton.className = 'scroll-top-btn';
@@ -45,33 +43,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isUser || !withAnimation) {
             // User messages or messages without animation
             messageContent.innerHTML = `<p>${text}</p>`;
-            
-            // Add emoji reactions for user messages (optional)
-            if (isUser) {
-                addEmojiReactions(messageDiv);
-            }
-            
             messageDiv.appendChild(messageContent);
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         } else {
             // Bot messages with typing animation
             messageContent.innerHTML = `<p></p>`;
-            
-            // Add copy button to bot messages
-            const copyButton = document.createElement('button');
-            copyButton.className = 'copy-btn';
-            copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-            copyButton.title = 'متن کاپی کریں';
-            copyButton.addEventListener('click', function() {
-                copyMessageText(text);
-            });
-            
-            const copySuccess = document.createElement('div');
-            copySuccess.className = 'copy-success';
-            
-            messageContent.appendChild(copyButton);
-            messageContent.appendChild(copySuccess);
             
             messageDiv.appendChild(messageContent);
             chatMessages.appendChild(messageDiv);
@@ -109,16 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Add a visual indicator that this is the latest answer
                     messageDiv.setAttribute('id', 'latest-answer');
-                    
-                    // Add focus indicator
-                    const focusIndicator = document.createElement('div');
-                    focusIndicator.className = 'focus-indicator';
-                    messageContent.appendChild(focusIndicator);
-                    
-                    // Remove focus indicator after 5 seconds
-                    setTimeout(() => {
-                        focusIndicator.remove();
-                    }, 5000);
                 }
             }
             
@@ -138,43 +105,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!userHasScrolledUp) {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
-    }
-    
-    // Function to copy message text to clipboard
-    function copyMessageText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            // Show success message
-            const copySuccess = document.querySelector('.copy-success');
-            if (copySuccess) {
-                copySuccess.classList.add('show');
-                setTimeout(() => {
-                    copySuccess.classList.remove('show');
-                }, 2000);
-            }
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
-        });
-    }
-    
-    // Function to add emoji reactions
-    function addEmojiReactions(messageElement) {
-        const reactions = document.createElement('div');
-        reactions.className = 'emoji-reactions';
-        
-        // Add some emoji reactions
-        const emojis = ['👍', '❤️', '😊', '🙏'];
-        
-        emojis.forEach(emoji => {
-            const emojiSpan = document.createElement('span');
-            emojiSpan.className = 'emoji-reaction';
-            emojiSpan.textContent = emoji;
-            emojiSpan.addEventListener('click', function() {
-                this.classList.toggle('selected');
-            });
-            reactions.appendChild(emojiSpan);
-        });
-        
-        messageElement.appendChild(reactions);
     }
     
     // Variable to store current suggestions
@@ -401,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Voice input functionality
+    // Voice input functionality (simplified)
     let isListening = false;
     let recognition;
     
@@ -715,17 +645,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         addMessage('السلام علیکم! میں آپ کی قرآن سے متعلق سوالات کے جوابات دینے کے لیے حاضر ہوں۔ آپ کیا جاننا چاہتے ہیں؟');
     }, 500);
-    
-    // Add print functionality
-    const printButton = document.createElement('button');
-    printButton.id = 'print-button';
-    printButton.className = 'print-btn';
-    printButton.innerHTML = '<i class="fas fa-print"></i>';
-    printButton.title = 'گفتگو پرنٹ کریں';
-    printButton.addEventListener('click', function() {
-        window.print();
-    });
-    document.body.appendChild(printButton);
     
     // Add dark mode toggle if supported
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
