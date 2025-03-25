@@ -2,121 +2,101 @@
 <html lang="ur" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="قرآن مجید سے متعلق سوالات کے جوابات حاصل کریں">
-    <meta name="theme-color" content="#1e6641">
-    <title>قرآنی سوال و جواب | Quranic Questions and Answers</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قرآنک سوال و جواب</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="dark-mode-supported">
-    <!-- Loading overlay for transitions -->
-    <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <div class="container">
-        <header>
-            <h1>قرآنک سوال و جواب</h1>
-            <p class="subtitle">قرآن مجید سے متعلق سوالات کے جوابات حاصل کریں</p>
+<body class="bg-gray-100 font-nastaliq min-h-screen flex flex-col">
+    <div class="container mx-auto px-4 py-4 max-w-4xl flex-grow flex flex-col">
+        <!-- Header with logo -->
+        <header class="text-center mb-4 bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-center mb-2">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="قرآنک لوگو" class="h-16 md:h-20">
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold text-emerald-700">قرآنک سوال و جواب</h1>
+            <p class="text-sm md:text-base text-gray-600">قرآن مجید سے متعلق سوالات کے جوابات حاصل کریں</p>
         </header>
-        
-        <!-- Suggestions at the top for mobile -->
-        <div class="suggestions" id="suggestions-section">
-            <h3>مجوزہ سوالات</h3>
-            <div class="suggestion-buttons">
-                <!-- Dynamically loaded from server -->
-            </div>
-        </div>
-        
-        <!-- Daily Fact Section -->
-        <div class="daily-fact" id="daily-fact"></div>
-        
-        <div class="chat-container">
-            <div class="chat-messages" id="chat-messages">
-                <!-- Messages will be added here dynamically -->
-            </div>
-            
-            <!-- Scroll indicator that appears when there are new messages -->
-            <div class="scroll-indicator" id="scroll-indicator" title="نئے جواب کی طرف اسکرول کریں">
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            
-            <div class="chat-input">
-                <div class="input-wrapper">
-                    <input type="text" id="user-message" placeholder=" " autocomplete="off">
-                    <label for="user-message" class="floating-label">اپنا سوال یہاں لکھیں...</label>
+
+        <!-- Main content area - responsive layout on mobile -->
+        <div class="flex flex-col md:flex-row gap-4 flex-grow">
+            <!-- Left panel for categories on desktop, bottom on mobile -->
+            <div class="w-full md:w-1/3 order-2 md:order-1">
+                <div class="bg-white rounded-lg shadow-sm p-4 h-full">
+                    <h2 class="text-xl font-bold text-emerald-700 mb-4 flex items-center">
+                        <i class="fas fa-list-ul ml-2 text-emerald-600"></i>
+                        مشہور زمرے
+                    </h2>
+                    <div id="categories-container" class="space-y-4 overflow-y-auto max-h-[70vh] md:max-h-[60vh]">
+                        <!-- Categories will be added here dynamically -->
+                        <div class="animate-pulse space-y-4">
+                            <div class="h-24 bg-gray-200 rounded"></div>
+                            <div class="h-24 bg-gray-200 rounded"></div>
+                            <div class="h-24 bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
                 </div>
-                <!-- Voice input button will be added dynamically if supported -->
-                <button id="send-button" title="بھیجیں" disabled>
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+            </div>
+
+            <!-- Right panel for chat on desktop, top on mobile -->
+            <div class="w-full md:w-2/3 order-1 md:order-2 flex flex-col">
+                <!-- Daily fact card -->
+                <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white flex-shrink-0 ml-2">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-purple-700">آج کی معلومات</h3>
+                    </div>
+                    <div id="fact-container" class="bg-purple-50 rounded-lg p-3 border-r-4 border-purple-500">
+                        <p class="text-base text-purple-800 fact-text leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- Chat container - fixed height to prevent stretching -->
+                <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                    <div class="flex items-center mb-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ml-2">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-emerald-700">گفتگو</h3>
+                    </div>
+                    
+                    <div id="chat-container" class="h-[30vh] md:h-[20vh] overflow-y-auto p-3 bg-gray-50 rounded-md mb-3">
+                        <div id="chat-messages" class="space-y-4">
+                            <!-- First message -->
+                            <div class="flex items-start mb-4">
+                                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ms-3">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="mr-2 py-2 px-3 bg-emerald-100 rounded-lg">
+                                    <p class="text-gray-800 text-sm">السلام علیکم! میں قرآن کے بارے میں آپ کے سوالات کا جواب دینے کے لیے حاضر ہوں۔ کوئی سوال پوچھیں!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input area - smaller on desktop -->
+                    <div class="flex items-center bg-gray-50 rounded-lg overflow-hidden border-2 border-gray-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200 transition-all md:max-w-md md:mx-auto w-full">
+                        <input id="question-input" type="text" placeholder="اپنا سوال یہاں پوچھیں..." 
+                               class="flex-grow py-2 px-3 bg-transparent border-none focus:outline-none focus:ring-0 text-gray-800 text-sm" />
+                        <button id="send-button" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 transition duration-200 flex items-center justify-center h-full">
+                            <i class="fas fa-paper-plane mx-1"></i>
+                            <span class="hidden md:inline text-sm">بھیجیں</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <div class="categories">
-            <h3>زمرہ جات</h3>
-            <div class="category-buttons">
-                <button class="category-btn" data-category="structure"><i class="fas fa-book"></i> قرآن کی ساخت</button>
-                <button class="category-btn" data-category="prophets"><i class="fas fa-user"></i> انبیاء کرام</button>
-                <button class="category-btn" data-category="pillars"><i class="fas fa-mosque"></i> ارکان اسلام</button>
-                <button class="category-btn" data-category="revelation"><i class="fas fa-scroll"></i> وحی</button>
-                <button class="category-btn" data-category="history"><i class="fas fa-history"></i> تاریخ</button>
-            </div>
-        </div>
-        
-        <footer>
-            <p>info@hubbulquran.com.pk</p>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm py-4 mt-auto">
+            <p>© ۲۰۲۵ قرآنک سوال و جواب - تمام حقوق محفوظ ہیں۔</p>
         </footer>
     </div>
-    
-    <div class="category-modal" id="category-modal">
-        <div class="modal-content">
-            <span class="close-modal" title="بند کریں">&times;</span>
-            <h3 id="modal-title">سوالات</h3>
-            <div class="modal-questions" id="modal-questions">
-                <!-- Questions will be added here dynamically -->
-            </div>
-        </div>
-    </div>
-    
-    <!-- Add preloaded state to improve perceived performance -->
-    <script>
-        // Show loading overlay until content is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Remove loading overlay after a short delay
-            setTimeout(() => {
-                document.getElementById('loading-overlay').classList.remove('show');
-            }, 300);
-            
-            // Check if this is a mobile device
-            const isMobile = window.matchMedia('(max-width: 768px)').matches;
-            
-            // Add mobile class to body if needed
-            if (isMobile) {
-                document.body.classList.add('mobile-device');
-                
-                // Move suggestions to top for mobile
-                const suggestionsSection = document.getElementById('suggestions-section');
-                const containerDiv = document.querySelector('.container');
-                if (suggestionsSection && containerDiv) {
-                    containerDiv.insertBefore(suggestionsSection, containerDiv.firstChild.nextSibling);
-                }
-            }
-            
-            // Check for dark mode preference
-            const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDarkMode) {
-                document.body.classList.add('dark-mode');
-            }
-        });
-    </script>
-    
-    <!-- Load the main script -->
-    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

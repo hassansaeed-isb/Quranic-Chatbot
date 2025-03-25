@@ -1,238 +1,262 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
+    // Get DOM elements
     const chatMessages = document.getElementById('chat-messages');
-    const userMessageInput = document.getElementById('user-message');
+    const questionInput = document.getElementById('question-input');
     const sendButton = document.getElementById('send-button');
-    const suggestionButtons = document.querySelectorAll('.suggestion-btn');
-    const categoryButtons = document.querySelectorAll('.category-btn');
-    const categoryModal = document.getElementById('category-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalQuestions = document.getElementById('modal-questions');
-    const closeModal = document.querySelector('.close-modal');
-    const dailyFactContainer = document.getElementById('daily-fact');
-    const scrollIndicator = document.getElementById('scroll-indicator');
+    const categoriesContainer = document.getElementById('categories-container');
+    const chatContainer = document.getElementById('chat-container');
+    const factContainer = document.getElementById('fact-container');
+    const factText = factContainer.querySelector('.fact-text');
     
-    // Animation settings
-    const typingSpeed = 15; // ms per character for typing animation (slightly faster)
+    // Track loading states
+    let isProcessing = false;
     
-    // Chat history (limiting to just what we need)
-    let chatHistory = [];
+    // Focus input field on load
+    questionInput.focus();
+
+    // Load daily fact
+    loadDailyFact();
     
-    // Track last bot message element for scrolling purposes
-    let lastBotMessageElement = null;
+    // Load categories
+    loadCategories();
     
-    // Track if user has scrolled up
-    let userHasScrolledUp = false;
+    // Event listeners
+    sendButton.addEventListener('click', function() {
+        if (!isProcessing) sendQuestion();
+    });
     
-    // Add scroll to top button (simplified)
-    const scrollTopButton = document.createElement('button');
-    scrollTopButton.id = 'scroll-top-btn';
-    scrollTopButton.className = 'scroll-top-btn';
-    scrollTopButton.innerHTML = '<i class="fas fa-arrow-up"></i>';
-    scrollTopButton.title = 'اوپر جائیں';
-    document.body.appendChild(scrollTopButton);
+    questionInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !isProcessing) {
+            event.preventDefault();
+            sendQuestion();
+        }
+    });
     
-    // Function to add a message to the chat with typing animation
-    function addMessage(text, isUser = false, withAnimation = true) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-        
-        const messageContent = document.createElement('div');
-        messageContent.className = 'message-content';
-        
-        if (isUser || !withAnimation) {
-            // User messages or messages without animation
-            messageContent.innerHTML = `<p>${text}</p>`;
-            messageDiv.appendChild(messageContent);
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        } else {
-            // Bot messages with typing animation
-            messageContent.innerHTML = `<p></p>`;
-            
-            messageDiv.appendChild(messageContent);
-            chatMessages.appendChild(messageDiv);
-            
-            // Save reference to the last bot message for scrolling
-            lastBotMessageElement = messageDiv;
-            
-            const textElement = messageContent.querySelector('p');
-            let index = 0;
-            
-            // Show scroll indicator if user has scrolled up
-            if (chatMessages.scrollHeight > chatMessages.clientHeight && 
-                chatMessages.scrollTop < chatMessages.scrollHeight - chatMessages.clientHeight - 100) {
-                showScrollIndicator();
-                userHasScrolledUp = true;
-            }
-            
-            function typeText() {
-                if (index < text.length) {
-                    textElement.textContent += text.charAt(index);
-                    index++;
-                    
-                    // Only auto-scroll if user hasn't scrolled up
-                    if (!userHasScrolledUp) {
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                    }
-                    
-                    setTimeout(typeText, typingSpeed);
-                } else {
-                    // Add suggestions if available
-                    if (currentSuggestions && currentSuggestions.length > 0) {
-                        displaySuggestions(currentSuggestions, messageDiv);
-                        currentSuggestions = null;
-                    }
-                    
-                    // Add a visual indicator that this is the latest answer
-                    messageDiv.setAttribute('id', 'latest-answer');
+    // Add tap to scroll to bottom on mobile
+    chatContainer.addEventListener('click', function() {
+        if (window.innerWidth < 768) {
+            scrollToBottom();
+        }
+    });
+
+    // Functions
+    function loadDailyFact() {
+        fetch('/daily-fact')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            }
-            
-            typeText();
-        }
-        
-        // Save to chat history (limited to last 10 messages)
-        chatHistory.push({
-            text: text,
-            isUser: isUser
-        });
-        
-        if (chatHistory.length > 10) {
-            chatHistory.shift();
-        }
-        
-        if (!userHasScrolledUp) {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-    }
-    
-    HEAD
-
-    // Function to copy message text to clipboard
-    function copyMessageText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            // Show success message
-            const copySuccess = document.querySelector('.copy-success');
-            if (copySuccess) {
-                copySuccess.classList.add('show');
-                setTimeout(() => {
-                    copySuccess.classList.remove('show');
-                }, 2000);
-            }
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
-        });
-    }
-    
-    // Function to add emoji reactions
-    function addEmojiReactions(messageElement) {
-        const reactions = document.createElement('div');
-        reactions.className = 'emoji-reactions';
-        
-        // Add some emoji reactions
-        const emojis = ['❤️',];
-        
-        emojis.forEach(emoji => {
-            const emojiSpan = document.createElement('span');
-            emojiSpan.className = 'emoji-reaction';
-            emojiSpan.textContent = emoji;
-            emojiSpan.addEventListener('click', function() {
-                this.classList.toggle('selected');
+                return response.json();
+            })
+            .then(data => {
+                factText.textContent = data.fact;
+                factText.classList.add('fade-in');
+            })
+            .catch(error => {
+                console.error('Error loading daily fact:', error);
+                factText.textContent = "قرآن میں 114 سورتیں ہیں۔";
             });
-            reactions.appendChild(emojiSpan);
-        });
-        
-        messageElement.appendChild(reactions);
     }
-    
 
-    // Variable to store current suggestions
-    let currentSuggestions = null;
-    
-    // Function to display clickable suggestions
-    function displaySuggestions(suggestions, parentElement) {
-        if (!suggestions || suggestions.length === 0) return;
-        
-        const suggestionsDiv = document.createElement('div');
-        suggestionsDiv.className = 'message-suggestions';
-        
-        suggestions.forEach(suggestion => {
-            const button = document.createElement('button');
-            button.className = 'message-suggestion-btn';
-            button.textContent = suggestion;
-            button.addEventListener('click', function() {
-                animateButton(this);
-                sendMessage(suggestion);
+    function loadCategories() {
+        fetch('/categories')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                categoriesContainer.innerHTML = '';
                 
-                // Smooth scroll to top of chat messages first to give visual feedback
-                smoothScrollToTop();
-            });
-            
-            suggestionsDiv.appendChild(button);
-        });
-        
-        parentElement.appendChild(suggestionsDiv);
-    }
-    
-    // Function to smoothly scroll to the top of chat messages
-    function smoothScrollToTop() {
-        chatMessages.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-    
-    // Function to smoothly scroll to the latest answer
-    function smoothScrollToLatestAnswer() {
-        const latestAnswer = document.getElementById('latest-answer');
-        if (latestAnswer) {
-            latestAnswer.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-            
-            // Highlight effect after scrolling
-            setTimeout(() => {
-                if (latestAnswer.querySelector('.message-content')) {
-                    latestAnswer.querySelector('.message-content').classList.add('highlight');
-                    setTimeout(() => {
-                        latestAnswer.querySelector('.message-content').classList.remove('highlight');
-                    }, 1000);
+                // Check if we got any categories
+                if (Object.keys(data).length === 0) {
+                    console.log("No categories found, creating defaults");
+                    createDefaultCategories();
+                    return;
                 }
-            }, 500);
+                
+                // Create and append category cards
+                for (const [id, category] of Object.entries(data)) {
+                    if (!category.questions || category.questions.length === 0) {
+                        continue;
+                    }
+                    
+                    const categoryCard = document.createElement('div');
+                    categoryCard.className = 'category-card bg-white p-4 rounded-lg shadow-sm hover:shadow transition-all';
+                    
+                    categoryCard.innerHTML = `
+                        <div class="flex items-center mb-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 ml-2">
+                                <i class="fas ${category.icon || 'fa-book-open'}"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-emerald-700">${category.title}</h3>
+                        </div>
+                        <ul class="space-y-1">
+                            ${category.questions.map(question => `
+                                <li class="category-question cursor-pointer hover:text-emerald-700" onclick="setQuestion('${question.replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-angle-left text-emerald-600 ml-1"></i> ${question}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    
+                    categoriesContainer.appendChild(categoryCard);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading categories:', error);
+                createDefaultCategories();
+            });
+    }
+
+    // Popular questions functionality removed
+
+    function sendQuestion() {
+        const question = questionInput.value.trim();
+        
+        // Don't send empty questions
+        if (!question) {
+            shakeBorder(questionInput.parentElement);
+            return;
         }
+        
+        // Set processing state
+        isProcessing = true;
+        
+        // Add user message to chat
+        addMessage(question, 'user');
+        
+        // Clear input and disable during processing
+        questionInput.value = '';
+        questionInput.disabled = true;
+        sendButton.disabled = true;
+        sendButton.classList.add('opacity-50');
+        
+        // Show typing indicator
+        showTypingIndicator();
+        
+        // Send question to server
+        fetch('/ask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ question: question }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Remove typing indicator
+            removeTypingIndicator();
+            
+            // Add bot message to chat
+            addMessage(data.answer, 'bot');
+            
+            // Add fact if it exists
+            if (data.fact) {
+                setTimeout(() => {
+                    addMessage(`معلومات: ${data.fact}`, 'bot', 'fact');
+                }, 500);
+            }
+            
+            // Popular questions and suggestions functionality removed
+            
+            // Reset processing state
+            isProcessing = false;
+            questionInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.classList.remove('opacity-50');
+            questionInput.focus();
+        })
+        .catch(error => {
+            console.error('Error sending question:', error);
+            removeTypingIndicator();
+            addMessage('معذرت، کوئی مسئلہ پیش آگیا ہے۔ براہ کرم دوبارہ کوشش کریں۔', 'bot', 'error');
+            
+            // Reset processing state
+            isProcessing = false;
+            questionInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.classList.remove('opacity-50');
+            questionInput.focus();
+        });
     }
     
-    // Function to show scroll indicator
-    function showScrollIndicator() {
-        scrollIndicator.classList.add('show');
-        setTimeout(() => {
-            scrollIndicator.classList.remove('show');
-        }, 3000);
+    function addMessage(text, sender, type = 'normal') {
+        // Create message element
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex items-start mb-3 chat-message';
+        
+        if (sender === 'user') {
+            messageDiv.classList.add('justify-end');
+            messageDiv.innerHTML = `
+                <div class="ml-2 py-2 px-3 bg-blue-100 user-message max-w-[75%] md:max-w-xs shadow-sm">
+                    <p class="text-gray-800 text-sm">${text}</p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                    <i class="fas fa-user"></i>
+                </div>
+            `;
+        } else {
+            let backgroundColor;
+            let icon;
+            
+            if (type === 'fact') {
+                backgroundColor = 'bg-purple-100';
+                icon = 'fa-lightbulb';
+            } else if (type === 'error') {
+                backgroundColor = 'bg-red-100';
+                icon = 'fa-exclamation-circle';
+            } else {
+                backgroundColor = 'bg-emerald-100';
+                icon = 'fa-robot';
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ms-3">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="mr-2 py-2 px-3 ${backgroundColor} bot-message max-w-[75%] md:max-w-xs shadow-sm">
+                    <p class="text-gray-800 text-sm">${text}</p>
+                </div>
+            `;
+        }
+        
+        // Add message to chat
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom with a smooth animation
+        scrollToBottom();
     }
     
-    // Function to show typing indicator
+    // Suggestions display functionality removed
+    
     function showTypingIndicator() {
         const typingDiv = document.createElement('div');
-        typingDiv.className = 'message bot';
         typingDiv.id = 'typing-indicator';
-        
-        const typingContent = document.createElement('div');
-        typingContent.className = 'typing';
-        
-        typingContent.innerHTML = `
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
+        typingDiv.className = 'flex items-start mb-3 chat-message';
+        typingDiv.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ms-3">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="mr-2 py-2 px-3 bg-gray-100 rounded-lg shadow-sm">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
         `;
         
-        typingDiv.appendChild(typingContent);
         chatMessages.appendChild(typingDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        scrollToBottom();
     }
     
-    // Function to remove typing indicator
     function removeTypingIndicator() {
         const typingIndicator = document.getElementById('typing-indicator');
         if (typingIndicator) {
@@ -240,469 +264,175 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to show a daily fact with animation
-    function showDailyFact(fact) {
-        if (dailyFactContainer && fact) {
-            dailyFactContainer.innerHTML = `<i class="fas fa-lightbulb"></i> ${fact}`;
-            dailyFactContainer.style.display = 'block';
-            
-            // Add animation
-            dailyFactContainer.classList.add('fact-animate');
-            setTimeout(() => {
-                dailyFactContainer.classList.remove('fact-animate');
-            }, 1000);
-        }
+    function scrollToBottom() {
+        chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: 'smooth'
+        });
     }
     
-    // Function to show thinking animation before bot responses
-    function showThinking() {
-        const thinkingDiv = document.createElement('div');
-        thinkingDiv.className = 'thinking';
-        thinkingDiv.id = 'thinking-indicator';
-        thinkingDiv.innerHTML = `میں آپ کے سوال پر غور کر رہا ہوں <i class="fas fa-brain"></i>`;
+    function shakeBorder(element) {
+        element.classList.add('border-red-500');
+        element.classList.add('shake');
         
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message bot';
-        messageDiv.appendChild(thinkingDiv);
-        
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        
-        return messageDiv; // Return for later removal
-    }
-    
-    // Function to remove thinking animation
-    function removeThinking(thinkingElement) {
-        if (thinkingElement && thinkingElement.parentNode) {
-            thinkingElement.parentNode.removeChild(thinkingElement);
-        }
-    }
-    
-    // Function to send the user's message to the server and get a response
-    async function sendMessage(message) {
-        // Don't send empty messages
-        if (!message.trim()) return;
-        
-        // Add user message to chat
-        addMessage(message, true);
-        
-        // Clear input field
-        userMessageInput.value = '';
-        
-        // Show thinking animation first
-        const thinkingElement = showThinking();
-        
-        // After a short delay, replace with typing indicator
         setTimeout(() => {
-            removeThinking(thinkingElement);
-            showTypingIndicator();
-        }, 800);
-        
-        try {
-            const response = await fetch('/ask', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ question: message }),
-            });
-            
-            const data = await response.json();
-            
-            // Remove typing indicator
-            removeTypingIndicator();
-            
-            // Reset user scroll tracking
-            userHasScrolledUp = false;
-            
-            // Store suggestions to display after typing animation
-            currentSuggestions = data.suggestions;
-            
-            // Add bot response to chat
-            addMessage(data.answer);
-            
-            // After answer is displayed, scroll to it if necessary
-            if (chatMessages.scrollHeight > chatMessages.clientHeight && 
-                chatMessages.scrollTop < chatMessages.scrollHeight - chatMessages.clientHeight - 100) {
-                
-                setTimeout(() => {
-                    smoothScrollToLatestAnswer();
-                }, data.answer.length * typingSpeed + 300);
-            }
-            
-            // Show daily fact if provided
-            if (data.fact) {
-                showDailyFact(data.fact);
-            }
-            
-            // If this is a farewell message, disable input
-            if (data.farewell) {
-                userMessageInput.disabled = true;
-                sendButton.disabled = true;
-                
-                // Show restart option after 2 seconds
-                setTimeout(() => {
-                    const restartDiv = document.createElement('div');
-                    restartDiv.className = 'restart-container';
-                    restartDiv.innerHTML = `
-                        <button id="restart-chat" class="restart-btn">
-                            <i class="fas fa-redo"></i> نئی گفتگو شروع کریں
-                        </button>
-                    `;
-                    chatMessages.appendChild(restartDiv);
-                    
-                    // Add event listener to restart button
-                    document.getElementById('restart-chat').addEventListener('click', function() {
-                        // Show loading animation
-                        const loadingOverlay = document.getElementById('loading-overlay');
-                        loadingOverlay.classList.add('show');
-                        
-                        // Reload after a short delay for better UX
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 500);
-                    });
-                }, 2000);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            removeTypingIndicator();
-            addMessage('عذر خواہ ہوں، کچھ غلطی ہوئی۔ براۓ مہربانی دوبارہ کوشش کریں۔');
-        }
+            element.classList.remove('border-red-500');
+            element.classList.remove('shake');
+        }, 820);
     }
     
-    // Voice input functionality (simplified)
-    let isListening = false;
-    let recognition;
-    
-    // Check if browser supports speech recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'ur-PK'; // Set language to Urdu
+    // Add shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            50% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out 2;
+        }
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+        }
         
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
-            userMessageInput.value = transcript;
-            toggleVoiceInput(); // Stop listening
-            
-            // Visual feedback - briefly highlight the input field
-            userMessageInput.classList.add('voice-input-success');
-            setTimeout(() => {
-                userMessageInput.classList.remove('voice-input-success');
-                sendMessage(transcript);
-            }, 300);
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            margin: 0 1px;
+            background-color: #9CA3AF;
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.4;
+        }
+        
+        .typing-indicator span:nth-of-type(1) {
+            animation: 1s blink infinite 0.3333s;
+        }
+        .typing-indicator span:nth-of-type(2) {
+            animation: 1s blink infinite 0.6666s;
+        }
+        .typing-indicator span:nth-of-type(3) {
+            animation: 1s blink infinite 0.9999s;
+        }
+        
+        @keyframes blink {
+            50% {
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Make setQuestion available globally
+    window.setQuestion = function(question) {
+        if (isProcessing) return;
+        
+        questionInput.value = question;
+        sendQuestion();
+        
+        // On mobile, scroll to chat area
+        if (window.innerWidth < 768) {
+            document.getElementById('chat-container').scrollIntoView({ 
+                behavior: 'smooth' 
+            });
+        }
+    };
+    
+    // Create default categories function
+    function createDefaultCategories() {
+        // Default categories
+        const defaultCategories = {
+            "structure": {
+                "title": "قرآن کا ڈھانچہ",
+                "icon": "fa-book-open",
+                "questions": ["قرآن کتنے پاروں پر مشتمل ہے", "قرآن میں کتنی سورتیں ہیں", "سب سے طویل سورۃ کون سی ہے", "سب سے چھوٹی سورۃ کون سی ہے"]
+            },
+            "revelation": {
+                "title": "قرآن کا نزول",
+                "icon": "fa-moon",
+                "questions": ["قرآن کس زبان میں نازل ہوا", "قرآن کس پیغمبر پر نازل ہوا", "سب سے پہلی وحی کون سی تھی", "قرآن کو مکمل ہونے میں کتنے سال لگے"]
+            },
+            "prophets": {
+                "title": "انبیاء کرام",
+                "icon": "fa-user",
+                "questions": ["قرآن میں کتنی بار محمد ﷺ کا ذکر آیا ہے", "قرآن میں سب سے زیادہ ذکر کس نبی کا آیا ہے"]
+            }
         };
         
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error', event.error);
-            toggleVoiceInput(); // Stop listening
+        categoriesContainer.innerHTML = '';
+        
+        for (const [id, category] of Object.entries(defaultCategories)) {
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'category-card bg-white p-4 rounded-lg shadow-sm hover:shadow transition-all';
             
-            // Visual feedback for error
-            const voiceButton = document.getElementById('voice-input-button');
-            voiceButton.classList.add('voice-error');
-            setTimeout(() => {
-                voiceButton.classList.remove('voice-error');
-            }, 500);
-        };
-        
-        // Add voice input button
-        const voiceButton = document.createElement('button');
-        voiceButton.id = 'voice-input-button';
-        voiceButton.className = 'voice-btn';
-        voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
-        voiceButton.title = 'بولنا شروع کریں';
-        
-        // Insert before send button
-        const chatInput = document.querySelector('.chat-input');
-        chatInput.insertBefore(voiceButton, sendButton);
-        
-        // Event listener for voice button
-        voiceButton.addEventListener('click', toggleVoiceInput);
-    }
-    
-    function toggleVoiceInput() {
-        const voiceButton = document.getElementById('voice-input-button');
-        
-        if (isListening) {
-            // Stop listening
-            recognition.stop();
-            voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
-            voiceButton.classList.remove('listening');
-            isListening = false;
-        } else {
-            // Start listening
-            recognition.start();
-            voiceButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-            voiceButton.classList.add('listening');
-            isListening = true;
+            categoryCard.innerHTML = `
+                <div class="flex items-center mb-3">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 ml-2">
+                        <i class="fas ${category.icon}"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-emerald-700">${category.title}</h3>
+                </div>
+                <ul class="space-y-1">
+                    ${category.questions.map(question => `
+                        <li class="category-question cursor-pointer hover:text-emerald-700" onclick="setQuestion('${question.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-angle-left text-emerald-600 ml-1"></i> ${question}
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            
+            categoriesContainer.appendChild(categoryCard);
         }
-    }
+    };
     
-    // Function to show the category modal
-    function showCategoryModal(categoryKey) {
-        fetch('/categories')
-            .then(response => response.json())
-            .then(categories => {
-                const category = categories[categoryKey];
-                if (!category) return;
-                
-                modalTitle.textContent = category.title;
-                modalQuestions.innerHTML = '';
-                
-                category.questions.forEach(question => {
-                    const questionElement = document.createElement('div');
-                    questionElement.className = 'modal-question';
-                    questionElement.innerHTML = `<i class="fas ${category.icon}"></i> ${question}`;
-                    questionElement.addEventListener('click', function() {
-                        sendMessage(question);
-                        
-                        // Animate modal closing
-                        const modalContent = document.querySelector('.modal-content');
-                        modalContent.style.animation = 'modalFadeOut 0.2s ease-in forwards';
-                        
-                        setTimeout(() => {
-                            categoryModal.style.display = 'none';
-                        }, 200);
-                        
-                        // Smooth scroll to top first to give visual feedback that something is happening
-                        smoothScrollToTop();
-                    });
-                    
-                    modalQuestions.appendChild(questionElement);
-                });
-                
-                // Display and animate modal
-                categoryModal.style.display = 'flex';
-                setTimeout(() => {
-                    categoryModal.classList.add('show');
-                }, 10);
-                
-                // Add animation to modal opening
-                const modalContent = document.querySelector('.modal-content');
-                modalContent.style.animation = 'modalFadeIn 0.3s ease-out';
-            })
-            .catch(error => {
-                console.error('Error fetching categories:', error);
-            });
-    }
+    // Make createDefaultCategories available globally
+    window.createDefaultCategories = createDefaultCategories;
     
-    // Button animation
-    function animateButton(button) {
-        button.classList.add('btn-press');
-        setTimeout(() => {
-            button.classList.remove('btn-press');
-        }, 200);
-    }
+    // Resize handler for suggestions removed
     
-    // Event listener for send button
-    sendButton.addEventListener('click', function() {
-        const message = userMessageInput.value.trim();
-        if (message !== '') {
-            animateButton(sendButton);
-            sendMessage(message);
-        } else {
-            // Visual feedback for empty message
-            userMessageInput.classList.add('empty-input-shake');
-            setTimeout(() => {
-                userMessageInput.classList.remove('empty-input-shake');
-            }, 500);
+    // Add offline detection
+    window.addEventListener('online', function() {
+        document.body.classList.remove('offline');
+        // Refresh data if we were offline
+        if (document.body.hasAttribute('data-was-offline')) {
+            document.body.removeAttribute('data-was-offline');
+            loadDailyFact();
+            loadCategories();
+            loadPopularQuestions();
+            addMessage('آپ کا انٹرنیٹ کنکشن بحال ہو گیا ہے۔', 'bot', 'normal');
         }
     });
     
-    // Event listener for Enter key
-    userMessageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            const message = userMessageInput.value.trim();
-            if (message !== '') {
-                sendMessage(message);
-            } else {
-                // Visual feedback for empty message
-                this.classList.add('empty-input-shake');
-                setTimeout(() => {
-                    this.classList.remove('empty-input-shake');
-                }, 500);
+    window.addEventListener('offline', function() {
+        document.body.classList.add('offline');
+        document.body.setAttribute('data-was-offline', 'true');
+        addMessage('آپ آف لائن ہیں۔ انٹرنیٹ کنکشن چیک کریں۔', 'bot', 'error');
+    });
+    
+    // Add accessibility improvements
+    questionInput.setAttribute('aria-label', 'اپنا سوال یہاں لکھیں');
+    sendButton.setAttribute('aria-label', 'سوال بھیجیں');
+    
+    // Double tap prevention for mobile
+    let lastTapTime = 0;
+    document.addEventListener('click', function(e) {
+        const el = e.target.closest('.category-question');
+        if (el && e.type === 'touchend') {
+            const currentTime = new Date().getTime();
+            const tapInterval = currentTime - lastTapTime;
+            
+            if (tapInterval < 300 && tapInterval > 0) {
+                e.preventDefault();
+                return false;
             }
-        }
-    });
-    
-    // Add focus effect for input field
-    userMessageInput.addEventListener('focus', function() {
-        this.parentElement.parentElement.classList.add('input-focused');
-    });
-    
-    userMessageInput.addEventListener('blur', function() {
-        this.parentElement.parentElement.classList.remove('input-focused');
-    });
-    
-    // Add keyup event to handle input changes
-    userMessageInput.addEventListener('input', function() {
-        // Enable/disable send button based on input
-        sendButton.disabled = this.value.trim() === '';
-        if (sendButton.disabled) {
-            sendButton.classList.add('disabled');
-        } else {
-            sendButton.classList.remove('disabled');
-        }
-    });
-    
-    // Track chat scrolling
-    chatMessages.addEventListener('scroll', function() {
-        // Show/hide scroll button based on scroll position
-        if (this.scrollTop > 200) {
-            scrollTopButton.classList.add('show');
-        } else {
-            scrollTopButton.classList.remove('show');
-        }
-        
-        // Track if user has scrolled up
-        if (this.scrollHeight - this.scrollTop - this.clientHeight > 100) {
-            userHasScrolledUp = true;
-        } else {
-            userHasScrolledUp = false;
-        }
-    });
-    
-    // Scroll indicator click event
-    scrollIndicator.addEventListener('click', function() {
-        smoothScrollToLatestAnswer();
-    });
-    
-    // Event listeners for suggestion buttons
-    suggestionButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const message = this.textContent;
-            animateButton(this);
-            sendMessage(message);
             
-            // Smooth scroll to top first
-            smoothScrollToTop();
-        });
-    });
-    
-    // Event listeners for category buttons
-    categoryButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const category = this.getAttribute('data-category');
-            animateButton(this);
-            showCategoryModal(category);
-        });
-    });
-    
-    // Close modal when clicking the close button
-    closeModal.addEventListener('click', function() {
-        const modalContent = document.querySelector('.modal-content');
-        modalContent.style.animation = 'modalFadeOut 0.2s ease-in forwards';
-        
-        setTimeout(() => {
-            categoryModal.style.display = 'none';
-            categoryModal.classList.remove('show');
-        }, 200);
-    });
-    
-    // Close modal when clicking outside of it
-    window.addEventListener('click', function(event) {
-        if (event.target === categoryModal) {
-            const modalContent = document.querySelector('.modal-content');
-            modalContent.style.animation = 'modalFadeOut 0.2s ease-in forwards';
-            
-            setTimeout(() => {
-                categoryModal.style.display = 'none';
-                categoryModal.classList.remove('show');
-            }, 200);
+            lastTapTime = currentTime;
         }
-    });
+    }, {passive: false});
     
-    // Scroll to top when button is clicked
-    scrollTopButton.addEventListener('click', function() {
-        smoothScrollToTop();
-    });
-    
-    // Show a daily fact when page loads with delay for better UX
-    setTimeout(() => {
-        fetch('/daily-fact')
-            .then(response => response.json())
-            .then(data => {
-                showDailyFact(data.fact);
-            })
-            .catch(error => {
-                console.error('Error fetching daily fact:', error);
-            });
-    }, 2000);
-    
-    // Handle keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Focus on input field when pressing / key
-        if (e.key === '/' && document.activeElement !== userMessageInput) {
-            e.preventDefault();
-            userMessageInput.focus();
-        }
-        
-        // Escape key closes modal
-        if (e.key === 'Escape' && categoryModal.style.display === 'flex') {
-            closeModal.click();
-        }
-    });
-    
-    // Fetch and populate popular questions from the server
-    async function fetchPopularQuestions() {
-        try {
-            const response = await fetch('/popular-questions');
-            const data = await response.json();
-            
-            if (data.questions && data.questions.length > 0) {
-                const suggestionsDiv = document.querySelector('.suggestion-buttons');
-                suggestionsDiv.innerHTML = '';
-                
-                data.questions.forEach(question => {
-                    const button = document.createElement('button');
-                    button.className = 'suggestion-btn';
-                    button.textContent = question;
-                    button.addEventListener('click', function() {
-                        animateButton(this);
-                        sendMessage(question);
-                        
-                        // Smooth scroll to top first
-                        smoothScrollToTop();
-                    });
-                    
-                    suggestionsDiv.appendChild(button);
-                });
-            }
-        } catch (error) {
-            console.error('Error fetching popular questions:', error);
-        }
-    }
-    
-    // Call the function to fetch popular questions
-    fetchPopularQuestions();
-    
-    // Focus on input field when page loads
-    userMessageInput.focus();
-    
-    // Send welcome message after a short delay
-    setTimeout(() => {
-        addMessage('السلام علیکم! میں آپ کی قرآن سے متعلق سوالات کے جوابات دینے کے لیے حاضر ہوں۔ آپ کیا جاننا چاہتے ہیں؟');
-    }, 500);
-    
-    // Add dark mode toggle if supported
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        const darkModeToggle = document.createElement('button');
-        darkModeToggle.id = 'dark-mode-toggle';
-        darkModeToggle.className = 'dark-mode-btn';
-        darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-        darkModeToggle.title = 'ڈارک موڈ ٹوگل کریں';
-        darkModeToggle.addEventListener('click', function() {
-            document.body.classList.toggle('dark-mode');
-            if (document.body.classList.contains('dark-mode')) {
-                this.innerHTML = '<i class="fas fa-sun"></i>';
-                this.title = 'لائٹ موڈ ٹوگل کریں';
-            } else {
-                this.innerHTML = '<i class="fas fa-moon"></i>';
-                this.title = 'ڈارک موڈ ٹوگل کریں';
-            }
-        });
-        document.body.appendChild(darkModeToggle);
-    }
+    // Popular questions initialization removed
 });

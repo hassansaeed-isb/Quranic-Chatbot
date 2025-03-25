@@ -1,277 +1,337 @@
 # -*- coding: utf-8 -*-
-# this a test comment
 """
 Urdu Quranic Chatbot Web Application
-Flask backend for the Quranic Q&A system
+Flask backend for the Quranic Q&A system with improved accuracy
 """
 
 from flask import Flask, render_template, request, jsonify
+import json
 import random
 import time
+import re
+import os
+from difflib import SequenceMatcher
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+import string
+
+# Uncomment these lines if you need to download NLTK resources
+# nltk.download('punkt')
+# nltk.download('stopwords')
 
 app = Flask(__name__)
 
-# Load question-answer pairs
-def load_qa_pairs():
-    qa_pairs = {
-        # Basic Quran Structure
-        "قرآن کتنے پاروں پر مشتمل ہے": {
-            "answer": "قرآن 30 پاروں پر مشتمل ہے۔",
-            "keywords": ["پاروں", "سپارے", "30"],
-        },
-        "قرآن میں کتنی سورتیں ہیں": {
-            "answer": "قرآن میں 114 سورتیں ہیں۔",
-            "keywords": ["سورتیں", "114"],
-        },
-        "سب سے طویل سورۃ کون سی ہے": {
-            "answer": "سب سے طویل سورۃ سورۃ البقرہ ہے۔",
-            "keywords": ["طویل", "سورۃ", "بقرہ"],
-        },
-        "سب سے چھوٹی سورۃ کون سی ہے": {
-            "answer": "سب سے چھوٹی سورۃ سورۃ الکوثر ہے۔",
-            "keywords": ["چھوٹی", "سورۃ", "الکوثر"],
-        },
-        "قرآن میں کتنے رکوع ہیں": {
-            "answer": "قرآن میں کل 558 رکوع ہیں۔",
-            "keywords": ["رکوع", "558"],
-        },
-        "قرآن میں کتنے الفاظ ہیں": {
-            "answer": "قرآن میں تقریباً 77,430 الفاظ ہیں۔",
-            "keywords": ["الفاظ", "77430"],
-        },
-        "قرآن میں کتنے حروف ہیں": {
-            "answer": "قرآن میں تقریباً 3,23,670 حروف ہیں۔",
-            "keywords": ["حروف", "323670"],
-        },
-        "قرآن میں کتنی آیات ہیں": {
-            "answer": "قرآن میں کل 6,236 آیات ہیں (بسم اللہ سمیت 6,349 آیات شمار کی جاتی ہیں)۔",
-            "keywords": ["آیات", "6236", "6349"],
-        },
-        "قرآن میں کتنی مکی اور مدنی سورتیں ہیں": {
-            "answer": "قرآن میں 86 مکی اور 28 مدنی سورتیں ہیں۔",
-            "keywords": ["مکی", "مدنی", "86", "28"],
-        },
-        
-        # Revelation Information
-        "قرآن کس زبان میں نازل ہوا": {
-            "answer": "قرآن عربی زبان میں نازل ہوا۔",
-            "keywords": ["زبان", "عربی"],
-        },
-        "قرآن کس پیغمبر پر نازل ہوا": {
-            "answer": "قرآن حضرت محمد ﷺ پر نازل ہوا۔",
-            "keywords": ["پیغمبر", "محمد", "ﷺ"],
-        },
-        "قرآن میں سب سے پہلے نازل ہونے والی آیت کون سی ہے": {
-            "answer": "سب سے پہلے نازل ہونے والی آیت سورۃ العلق کی پہلی پانچ آیات ہیں۔",
-            "keywords": ["پہلے", "نازل", "علق"],
-        },
-        "سب سے پہلی وحی کون سی تھی": {
-            "answer": "سب سے پہلی وحی سورۃ العلق کی پہلی پانچ آیات تھیں۔",
-            "keywords": ["پہلی", "وحی", "علق"],
-        },
-        "سب سے پہلی وحی کہاں نازل ہوئی": {
-            "answer": "سب سے پہلی وحی غارِ حرا میں نازل ہوئی۔",
-            "keywords": ["پہلی", "وحی", "حرا"],
-        },
-        "قرآن کی آخری آیت کون سی ہے": {
-            "answer": "قرآن کی آخری آیت سورۃ البقرہ کی آیت 281 ہے۔",
-            "keywords": ["آخری", "281", "بقرہ"],
-        },
-        "قرآن کو مکمل ہونے میں کتنے سال لگے": {
-            "answer": "قرآن کو مکمل نازل ہونے میں تقریباً 23 سال لگے۔",
-            "keywords": ["مکمل", "23", "سال"],
-        },
-        "قرآن کا سب سے پہلا اور آخری نزول کہاں ہوا": {
-            "answer": "قرآن کا سب سے پہلا نزول غارِ حرا میں اور آخری نزول حجۃ الوداع کے موقع پر میدانِ عرفات میں ہوا۔",
-            "keywords": ["پہلا", "آخری", "نزول", "حرا", "عرفات"],
-        },
-        
-        # Special Verses
-        "قرآن کی سب سے بڑی آیت کون سی ہے": {
-            "answer": "قرآن کی سب سے بڑی آیت آیتُ الدین (سورۃ البقرہ، آیت 282) ہے۔",
-            "keywords": ["بڑی", "آیت", "الدین", "282"],
-        },
-        "قرآن کی سب سے زیادہ فضیلت والی آیت کون سی ہے": {
-            "answer": "قرآن کی سب سے زیادہ فضیلت والی آیت آیتُ الکرسی (سورۃ البقرہ، آیت 255) ہے۔",
-            "keywords": ["فضیلت", "آیت", "الکرسی", "255"],
-        },
-        "قرآن میں سب سے چھوٹی آیت کون سی ہے": {
-            "answer": "قرآن میں سب سے چھوٹی آیت 'مدھامّتان' (سورۃ الرحمن، آیت 64) ہے۔",
-            "keywords": ["چھوٹی", "آیت", "مدھامّتان"],
-        },
-        "قرآن میں سب سے بڑی سورت کون سی ہے": {
-            "answer": "قرآن میں سب سے بڑی سورت سورۃ البقرہ ہے۔",
-            "keywords": ["بڑی", "سورۃ", "بقرہ"],
-        },
-        
-        # Mentions in Quran
-        "قرآن میں سب سے زیادہ کس چیز کا ذکر ہے": {
-            "answer": "قرآن میں سب سے زیادہ اللہ کا ذکر آیا ہے۔",
-            "keywords": ["زیادہ", "ذکر", "اللہ"],
-        },
-        "قرآن میں سب سے زیادہ استعمال ہونے والا لفظ کون سا ہے": {
-            "answer": "قرآن میں سب سے زیادہ استعمال ہونے والا لفظ 'اللہ' ہے۔",
-            "keywords": ["زیادہ", "استعمال", "لفظ", "اللہ"],
-        },
-        "قرآن میں کتنے معجزات کا ذکر ہے": {
-            "answer": "قرآن میں تقریباً 1000 معجزات کا ذکر ہے۔",
-            "keywords": ["معجزات", "1000"],
-        },
-        
-        # Prophets and People
-        "قرآن میں سب سے زیادہ ذکر کس نبی کا آیا ہے": {
-            "answer": "قرآن میں سب سے زیادہ ذکر حضرت موسیٰ علیہ السلام کا آیا ہے۔",
-            "keywords": ["ذکر", "نبی", "موسیٰ"],
-        },
-        "قرآن میں کتنی بار محمد ﷺ کا ذکر آیا ہے": {
-            "answer": "قرآن میں محمد ﷺ کا ذکر 4 بار آیا ہے۔",
-            "keywords": ["محمد", "ذکر", "4"],
-        },
-        "قرآن میں کتنی بار حضرت عیسیٰ علیہ السلام کا ذکر آیا ہے": {
-            "answer": "قرآن میں حضرت عیسیٰ علیہ السلام کا ذکر 25 بار آیا ہے۔",
-            "keywords": ["عیسیٰ", "ذکر", "25"],
-        },
-        "قرآن میں کتنی بار حضرت ابراہیم علیہ السلام کا ذکر آیا ہے": {
-            "answer": "قرآن میں حضرت ابراہیم علیہ السلام کا ذکر 69 بار آیا ہے۔",
-            "keywords": ["ابراہیم", "ذکر", "69"],
-        },
-        "قرآن میں کتنے صحابہ کرام کے نام ذکر ہوئے ہیں": {
-            "answer": "قرآن میں حضرت زید بن حارثہ رضی اللہ عنہ کا نام ذکر ہوا ہے، باقی صحابہ کے نام براہ راست مذکور نہیں ہیں۔",
-            "keywords": ["صحابہ", "نام", "زید"],
-        },
-        "قرآن میں سب سے زیادہ ذکر ہونے والی عورت کون ہے": {
-            "answer": "قرآن میں سب سے زیادہ ذکر حضرت مریم علیہا السلام کا آیا ہے۔",
-            "keywords": ["ذکر", "عورت", "مریم"],
-        },
-        "قرآن میں فرعون کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں فرعون کا ذکر تقریباً 74 بار آیا ہے۔",
-            "keywords": ["فرعون", "ذکر", "74"],
-        },
-        "قرآن میں سب سے زیادہ کس قوم کا ذکر آیا ہے": {
-            "answer": "قرآن میں سب سے زیادہ بنی اسرائیل کا ذکر آیا ہے۔",
-            "keywords": ["قوم", "ذکر", "بنی اسرائیل"],
-        },
-        
-        # Islamic History
-        "قرآن میں سب سے پہلے ایمان لانے والی خاتون کون تھیں": {
-            "answer": "قرآن میں براہ راست ذکر تو نہیں، لیکن سب سے پہلے ایمان لانے والی خاتون حضرت خدیجہ رضی اللہ عنہا تھیں۔",
-            "keywords": ["ایمان", "خاتون", "خدیجہ"],
-        },
-        "قرآن میں سب سے پہلے شہید ہونے والے صحابی کون تھے": {
-            "answer": "سب سے پہلے شہید ہونے والے صحابی حضرت سمیہ رضی اللہ عنہا تھیں۔",
-            "keywords": ["شہید", "صحابی", "سمیہ"],
-        },
-        "قرآن میں سب سے پہلے مسلمان ہونے والے مرد کون تھے": {
-            "answer": "سب سے پہلے مسلمان ہونے والے مرد حضرت ابوبکر صدیق رضی اللہ عنہ تھے۔",
-            "keywords": ["مسلمان", "مرد", "ابوبکر"],
-        },
-        "قرآن میں سب سے پہلے مسلمان ہونے والے بچہ کون تھے": {
-            "answer": "سب سے پہلے اسلام قبول کرنے والے بچے حضرت علی رضی اللہ عنہ تھے۔",
-            "keywords": ["مسلمان", "بچہ", "علی"],
-        },
-        "قرآن میں سب سے پہلے ایمان لانے والے غلام کون تھے": {
-            "answer": "سب سے پہلے ایمان لانے والے غلام حضرت زید بن حارثہ رضی اللہ عنہ تھے۔",
-            "keywords": ["ایمان", "غلام", "زید"],
-        },
-        
-        # Pillars of Islam
-        "قرآن میں نماز کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں نماز کا ذکر 700 سے زائد بار آیا ہے۔",
-            "keywords": ["نماز", "ذکر", "700"],
-        },
-        "قرآن میں روزے کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں روزے کا ذکر 13 بار آیا ہے۔",
-            "keywords": ["روزہ", "ذکر", "13"],
-        },
-        "قرآن میں حج کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں حج کا ذکر 12 بار آیا ہے۔",
-            "keywords": ["حج", "ذکر", "12"],
-        },
-        "قرآن میں زکوٰۃ کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں زکوٰۃ کا ذکر 32 بار آیا ہے۔",
-            "keywords": ["زکوٰۃ", "ذکر", "32"],
-        },
-        
-        # Other Important Concepts
-        "قرآن میں جنت کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں جنت کا ذکر 147 بار آیا ہے۔",
-            "keywords": ["جنت", "147"],
-        },
-        "قرآن میں دوزخ کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں دوزخ کا ذکر 77 بار آیا ہے۔",
-            "keywords": ["دوزخ", "77"],
-        },
-        "قرآن میں شیطان کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں شیطان کا ذکر 88 بار آیا ہے۔",
-            "keywords": ["شیطان", "ذکر", "88"],
-        },
-        "قرآن میں دنیا اور آخرت کا ذکر کتنی بار آیا ہے": {
-            "answer": "قرآن میں دنیا کا ذکر 115 بار اور آخرت کا ذکر بھی 115 بار آیا ہے۔",
-            "keywords": ["دنیا", "آخرت", "115"],
-        },
-        "قرآن میں سب سے پہلے کس چیز کا حکم دیا گیا": {
-            "answer": "قرآن میں سب سے پہلے 'اقرأ' (پڑھنے) کا حکم دیا گیا۔",
-            "keywords": ["حکم", "پہلا", "اقرأ"],
-        },
-        "قرآن میں سب سے بڑی سزا کس چیز کے لیے ہے": {
-            "answer": "قرآن میں سب سے بڑی سزا شرک کے لیے بیان کی گئی ہے۔",
-            "keywords": ["سزا", "بڑی", "شرک"],
-        },
-        
-        # Miscellaneous
-        "قرآن میں کتنی زبانوں کے الفاظ استعمال ہوئے ہیں": {
-            "answer": "قرآن میں زیادہ تر عربی زبان کے الفاظ ہیں، لیکن اس میں فارسی، رومی، حبشی اور عبرانی کے چند الفاظ بھی موجود ہیں۔",
-            "keywords": ["زبان", "عربی", "فارسی", "رومی", "حبشی"],
-        },
-        "قرآن میں کتنے درختوں کا ذکر آیا ہے": {
-            "answer": "قرآن میں کئی درختوں کا ذکر آیا ہے، جن میں زیتون، کھجور، انگور، اور بیری شامل ہیں۔",
-            "keywords": ["درخت", "زیتون", "کھجور", "انگور"],
-        },
-        "قرآن میں کس جانور کا سب سے زیادہ ذکر ہے": {
-            "answer": "قرآن میں سب سے زیادہ ذکر گائے (بقرہ) کا آیا ہے۔",
-            "keywords": ["جانور", "ذکر", "گائے"],
-        },
-        "قرآن میں سب سے زیادہ ذکر کس دریا کا آیا ہے": {
-            "answer": "قرآن میں سب سے زیادہ ذکر دریائے نیل کا آیا ہے۔",
-            "keywords": ["ذکر", "دریا", "نیل"],
-        },
-    }
-    return qa_pairs
+# Path to the JSON data file
+DATA_FILE = os.path.join(os.path.dirname(__file__), 'qa_data.json')
 
-# Text processing functions
-def normalize(text):
-    """Remove punctuation and extra spaces for better matching."""
-    return text.replace("؟", "").strip()
+# Load the question-answer data from JSON file
+def load_qa_data():
+    try:
+        with open(DATA_FILE, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    except Exception as e:
+        print(f"Error loading QA data: {e}")
+        # Return minimal data structure in case of error
+        return {"questions": [], "categories": {}, "facts": [], 
+                "greetings": [], "thank_you_responses": [], 
+                "farewell_responses": [], "not_found_responses": []}
 
-def find_answer(user_input, qa_pairs):
-    """Find an appropriate answer based on keywords."""
+# Get question by ID
+def get_question_by_id(question_id, data):
+    for question in data["questions"]:
+        if question["id"] == question_id:
+            return question
+    return None
+
+# Text preprocessing
+def preprocess_text(text, is_urdu=True):
+    """
+    Clean and normalize text for better matching.
+    Handles both Urdu and English text.
+    """
+    # For Urdu text
+    if is_urdu:
+        # Remove Urdu punctuation
+        text = re.sub(r'[۔،؟!؛:\(\)]', ' ', text)
+    else:
+        # For English parts
+        # Remove punctuation
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        # Convert to lowercase
+        text = text.lower()
+        
+    # Normalize whitespace for both
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text
+
+# Tokenize Urdu text
+def tokenize_urdu(text):
+    """Tokenize Urdu text into words"""
+    # Basic tokenization by whitespace
+    tokens = text.split()
+    # Further clean tokens
+    tokens = [token.strip() for token in tokens if token.strip()]
+    return tokens
+
+# Advanced similarity score function
+def advanced_similarity_score(query, reference, is_urdu=True):
+    """
+    Calculate advanced similarity between query and reference texts
+    using multiple techniques including word overlap and sequence matching.
+    """
+    # Preprocess both texts
+    query_processed = preprocess_text(query, is_urdu)
+    reference_processed = preprocess_text(reference, is_urdu)
+    
+    # Method 1: String Sequence Matching
+    sequence_similarity = SequenceMatcher(None, query_processed, reference_processed).ratio()
+    
+    # Method 2: Word Overlap
+    if is_urdu:
+        query_tokens = tokenize_urdu(query_processed)
+        reference_tokens = tokenize_urdu(reference_processed)
+    else:
+        # For English, use more advanced NLP
+        query_tokens = word_tokenize(query_processed)
+        reference_tokens = word_tokenize(reference_processed)
+        
+        # Remove stopwords for English
+        stop_words = set(stopwords.words('english'))
+        query_tokens = [w for w in query_tokens if w not in stop_words]
+        reference_tokens = [w for w in reference_tokens if w not in stop_words]
+        
+        # Stem words for English
+        stemmer = PorterStemmer()
+        query_tokens = [stemmer.stem(w) for w in query_tokens]
+        reference_tokens = [stemmer.stem(w) for w in reference_tokens]
+    
+    # Count matching words
+    matching_words = sum(1 for word in query_tokens if word in reference_tokens)
+    
+    # Calculate word overlap ratio
+    total_words = len(set(query_tokens + reference_tokens))
+    word_overlap = matching_words / total_words if total_words > 0 else 0
+    
+    # Combined similarity (weighted average)
+    combined_similarity = (0.6 * sequence_similarity) + (0.4 * word_overlap)
+    
+    return combined_similarity
+
+# Find matching questions using advanced methods
+def find_matching_question(user_input, qa_data):
+    """Find the best matching question using advanced methods"""
+    processed_input = preprocess_text(user_input)
+    
+    # Direct match check with higher threshold for short queries
+    for question in qa_data["questions"]:
+        question_text = question["question"]
+        if advanced_similarity_score(processed_input, question_text) > 0.8:
+            return question
+        
+        # Check alternative phrasings
+        for alt in question.get("alternative_phrasings", []):
+            if advanced_similarity_score(processed_input, alt) > 0.8:
+                return question
+    
+    # Keyword matching with improved weighting (adjust threshold for short queries)
     best_match = None
-    match_count = 0
+    highest_score = 0
     
-    for question, details in qa_pairs.items():
-        current_matches = 0
-        for keyword in details["keywords"]:
-            if keyword in user_input:
-                current_matches += 1
+    # Lower threshold for short queries
+    threshold = 2 if len(processed_input.split()) <= 3 else 3
+    
+    for question in qa_data["questions"]:
+        score = 0
         
-        if current_matches > match_count:
-            match_count = current_matches
-            best_match = details
+        # Check for keywords
+        for keyword in question.get("keywords", []):
+            if keyword.lower() in processed_input.lower():
+                # Weight longer keywords more (improved algorithm)
+                score += (len(keyword) ** 1.5) * 0.1
+        
+        # Add category weighting
+        if "category" in question:
+            category_keywords = {
+                "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
+                "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
+                "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
+                "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"]
+            }
+            
+            if question["category"] in category_keywords:
+                for cat_keyword in category_keywords[question["category"]]:
+                    if cat_keyword in processed_input.lower():
+                        score += 2  # Boost category relevance
+        
+        if score > highest_score:
+            highest_score = score
+            best_match = question
     
-    return best_match
+    # Return keyword match if score is above threshold
+    if highest_score >= threshold:
+        return best_match
+    
+    # Fuzzy matching as a fallback
+    best_match = None
+    highest_similarity = 0
+    
+    for question in qa_data["questions"]:
+        similarity = advanced_similarity_score(processed_input, question["question"])
+        if similarity > highest_similarity:
+            highest_similarity = similarity
+            best_match = question
+    
+    if highest_similarity > 0.5:
+        return best_match
+    
+    return None
 
-# Daily Quranic facts
-def get_random_fact():
-    facts = [
-        "سورۃ الکوثر قرآن کی سب سے چھوٹی سورت ہے، اس میں صرف 3 آیات ہیں۔",
-        "قرآن میں 'بسم اللہ الرحمن الرحیم' 114 بار آتا ہے (ہر سورت کے شروع میں، سوائے سورۃ التوبہ کے)۔",
-        "قرآن کی آیت الکرسی (سورۃ البقرہ، آیت 255) کو قرآن کی سب سے عظیم آیت سمجھا جاتا ہے۔",
-        "قرآن میں 30 پارے، 114 سورتیں، 558 رکوع اور 6236 آیات ہیں۔",
-        "حضرت محمد ﷺ پر پہلی وحی غارِ حرا میں نازل ہوئی تھی۔",
-        "قرآن میں سب سے زیادہ ذکر حضرت موسیٰ علیہ السلام کا آیا ہے۔"
+# Get related questions as suggestions (improved algorithm)
+def get_related_questions(question, qa_data):
+    """Get related questions with smart fallback"""
+    related = []
+    
+    if not question or "related_questions" not in question:
+        # Determine category from user input if possible
+        categories = ["structure", "revelation", "prophets", "special_verses", "mentions"]
+        category_keywords = {
+            "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
+            "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
+            "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
+            "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"],
+            "mentions": ["ذکر", "کتنی بار", "نام", "کتنی دفعہ"]
+        }
+        
+        matched_category = None
+        for cat, keywords in category_keywords.items():
+            if any(kw in str(question) for kw in keywords):
+                matched_category = cat
+                break
+        
+        # Get questions from the matched category or popular questions
+        if matched_category:
+            cat_questions = [q for q in qa_data["questions"] if q.get("category") == matched_category]
+            related = cat_questions[:3]
+        else:
+            # Popular questions as fallback
+            popular_ids = ["quran_paras", "quran_surahs", "longest_surah", "shortest_surah"]
+            for qid in popular_ids:
+                q = get_question_by_id(qid, qa_data)
+                if q:
+                    related.append(q)
+    else:
+        # Get explicitly related questions
+        for q_id in question.get("related_questions", []):
+            q = get_question_by_id(q_id, qa_data)
+            if q:
+                related.append(q)
+    
+    return related[:3]  # Limit to 3 related questions
+
+# Intent detection
+def detect_intent(text):
+    """Detect the intent of the user's message"""
+    text_lower = text.lower()
+    
+    # Fixed greeting detection - using specific full words/phrases only
+    greeting_patterns = [
+        "السلام علیکم", "سلام", "آداب", "ہیلو", "ہائے", "اسلام علیکم", "جی ", 
+        "hello", "hi ", "hey", "assalam", "salam"
     ]
-    return random.choice(facts)
+    
+    for greeting in greeting_patterns:
+        if greeting in text_lower:
+            return "greeting"
+    
+    # Thanks
+    thanks_words = ["شکریہ", "مہربانی", "احسان", "ممنون", "تھینکس", "thanks", "thank you", "thanks a lot"]
+    if any(word in text_lower for word in thanks_words):
+        return "thanks"
+    
+    # Farewell
+    farewells = ["اللہ حافظ", "خدا حافظ", "فی امان اللہ", "الوداع", "بائے", "bye", "goodbye", "see you"]
+    if any(farewell in text_lower for farewell in farewells):
+        return "farewell"
+    
+    # Help
+    help_words = ["مدد", "help", "کیسے", "how to", "guide", "explain"]
+    if any(word in text_lower for word in help_words):
+        return "help"
+    
+    # Default to question
+    return "question"
 
+# Process the user's question and determine the answer
+def process_question(user_input, qa_data):
+    """Process user input and return appropriate response"""
+    # Detect intent
+    intent = detect_intent(user_input)
+    
+    if intent == "greeting":
+        return {
+            'answer': random.choice(qa_data.get("greetings", ["وعلیکم السلام!"])),
+            'suggestions': [q["question"] for q in get_related_questions(None, qa_data)],
+            'confidence': 'high',
+            'intent': 'greeting'
+        }
+    
+    if intent == "thanks":
+        return {
+            'answer': random.choice(qa_data.get("thank_you_responses", ["آپ کا شکریہ!"])),
+            'suggestions': ["مزید سوالات", "اللہ حافظ"],
+            'confidence': 'high',
+            'intent': 'thanks'
+        }
+    
+    if intent == "farewell":
+        return {
+            'answer': random.choice(qa_data.get("farewell_responses", ["اللہ حافظ!"])),
+            'farewell': True,
+            'confidence': 'high',
+            'intent': 'farewell'
+        }
+    
+    if intent == "help":
+        help_text = """آپ قرآن کے بارے میں کوئی بھی سوال پوچھ سکتے ہیں، جیسے:
+- قرآن کتنے پاروں پر مشتمل ہے؟
+- سب سے طویل سورۃ کون سی ہے؟
+- قرآن میں کتنی سورتیں ہیں؟
+- قرآن میں کس پیغمبر کا سب سے زیادہ ذکر ہے؟"""
+        return {
+            'answer': help_text,
+            'suggestions': [q["question"] for q in get_related_questions(None, qa_data)[:4]],
+            'confidence': 'high',
+            'intent': 'help'
+        }
+    
+    # Process as a question
+    match = find_matching_question(user_input, qa_data)
+    
+    if match:
+        related = get_related_questions(match, qa_data)
+        return {
+            'answer': match["answer"],
+            'confidence': 'high',
+            'suggestions': [q["question"] for q in related],
+            'intent': 'question'
+        }
+    else:
+        # No match found
+        fact = random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))
+        not_found = random.choice(qa_data.get("not_found_responses", 
+                                  ["معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔"]))
+        return {
+            'answer': not_found,
+            'fact': fact,
+            'confidence': 'none',
+            'suggestions': [q["question"] for q in get_related_questions(None, qa_data)],
+            'intent': 'unknown'
+        }
+
+# Routes
 @app.route('/')
 def home():
     """Render the home page"""
@@ -281,116 +341,109 @@ def home():
 def ask():
     """Process the user's question and return an answer"""
     user_input = request.json.get('question', '')
+    qa_data = load_qa_data()
     
-    # Add slight delay to simulate thinking (optional)
-    time.sleep(0.5)
+    # Add slight delay to simulate thinking
+    time.sleep(0.2)
     
-    # Exit condition check
-    if user_input == "اللہ حافظ ,ختم" or "اللہ حافظ" in user_input:
-        return jsonify({
-            'answer': "اللہ حافظ! دوبارہ بات کرنے کا شکریہ۔", 
-            'farewell': True
-        })
+    # Process the question using our improved engine
+    result = process_question(user_input, qa_data)
     
-    # Handle greetings
-    greetings = ["السلام علیکم", "سلام", "آداب", "ہیلو", "ہائے", "ہاے"]
-    for greeting in greetings:
-        if greeting in user_input.lower():
-            return jsonify({
-                'answer': "وعلیکم السلام! میں آپ کی قرآن سے متعلق سوالات کے جوابات دینے کے لیے حاضر ہوں۔ کیا آپ کوئی خاص سوال پوچھنا چاہتے ہیں؟",
-                'suggestions': ["قرآن کتنے پاروں پر مشتمل ہے", "قرآن میں کتنی سورتیں ہیں"]
-            })
-    
-    # Thank you responses
-    thanks = ["شکریہ", "مہربانی", "احسان"]
-    for thank in thanks:
-        if thank in user_input.lower():
-            return jsonify({
-                'answer': "آپ کا شکریہ! میں آپ کی مدد کرکے خوش ہوں۔ کیا آپ کچھ اور پوچھنا چاہیں گے؟",
-                'suggestions': ["ہاں", "نہیں، اللہ حافظ"]
-            })
-    
-    # Normalize input and find answer
-    normalized_input = normalize(user_input)
-    qa_pairs = load_qa_pairs()
-    match = find_answer(normalized_input, qa_pairs)
-    
-    if match:
-        # Return answer with related questions as suggestions
-        return jsonify({
-            'answer': match["answer"],
-            'suggestions': match.get("related", [])
-        })
-    else:
-        # If no direct match found
-        return jsonify({
-            'answer': "معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔ برائے مہربانی قرآن سے متعلق کوئی اور سوال پوچھیں۔",
-            'fact': get_random_fact(),
-            'suggestions': ["قرآن کتنے پاروں پر مشتمل ہے", "قرآن میں کتنی سورتیں ہیں"]
-        })
-
+    return jsonify(result)
 
 @app.route('/popular-questions')
 def popular_questions():
     """Return a list of popular questions for suggestions"""
-    popular = [
-        "قرآن کتنے پاروں پر مشتمل ہے",
-        "قرآن میں کتنی سورتیں ہیں",
-        "سب سے طویل سورۃ کون سی ہے",
-        "قرآن میں نماز کا ذکر کتنی بار آیا ہے",
-    ]
+    qa_data = load_qa_data()
+    popular_ids = ["quran_paras", "quran_surahs", "longest_surah", "shortest_surah"]
+    popular = []
+    
+    for q_id in popular_ids:
+        q = get_question_by_id(q_id, qa_data)
+        if q:
+            popular.append(q["question"])
+    
     return jsonify({'questions': popular})
 
 @app.route('/daily-fact')
 def daily_fact():
     """Return a random Quranic fact"""
-    return jsonify({'fact': get_random_fact()})
+    qa_data = load_qa_data()
+    return jsonify({'fact': random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))})
 
 @app.route('/categories')
 def get_categories():
     """Return categories and their questions"""
-    categories = {
-        "structure": {
-            "title": "قرآن کی ساخت",
-            "icon": "fa-book",
-            "questions": [
-                "قرآن کتنے پاروں پر مشتمل ہے",
-                "قرآن میں کتنی سورتیں ہیں",
-                "سب سے طویل سورۃ کون سی ہے",
-                "سب سے چھوٹی سورۃ کون سی ہے"
-            ]
-        },
-        "prophets": {
-            "title": "انبیاء کرام",
-            "icon": "fa-user",
-            "questions": [
-                "قرآن میں سب سے زیادہ ذکر کس نبی کا آیا ہے",
-                "قرآن میں کتنی بار محمد ﷺ کا ذکر آیا ہے",
-                "قرآن میں کتنی بار حضرت عیسیٰ علیہ السلام کا ذکر آیا ہے"
-            ]
-        },
-        "pillars": {
-            "title": "ارکان اسلام",
-            "icon": "fa-mosque",
-            "questions": [
-                "قرآن میں نماز کا ذکر کتنی بار آیا ہے",
-                "قرآن میں روزے کا ذکر کتنی بار آیا ہے",
-                "قرآن میں حج کا ذکر کتنی بار آیا ہے",
-                "قرآن میں زکوٰۃ کا ذکر کتنی بار آیا ہے"
-            ]
-        },
-        "revelation": {
-            "title": "وحی",
-            "icon": "fa-scroll",
-            "questions": [
-                "قرآن میں سب سے پہلے نازل ہونے والی آیت کون سی ہے",
-                "سب سے پہلی وحی کون سی تھی",
-                "سب سے پہلی وحی کہاں نازل ہوئی"
-            ]
-        }
+    qa_data = load_qa_data()
+    result = {}
+    
+    # Group questions by category
+    category_questions = {}
+    for question in qa_data.get("questions", []):
+        if "category" in question:
+            category = question["category"]
+            if category not in category_questions:
+                category_questions[category] = []
+            category_questions[category].append(question["question"])
+    
+    # Create category objects
+    category_titles = {
+        "structure": "قرآن کا ڈھانچہ",
+        "revelation": "قرآن کا نزول",
+        "prophets": "انبیاء کرام",
+        "special_verses": "خاص آیات",
+        "mentions": "مختلف ذکر",
+        "islamic_history": "اسلامی تاریخ"
     }
-    return jsonify(categories)
+    
+    category_icons = {
+        "structure": "fa-book-open",
+        "revelation": "fa-moon",
+        "prophets": "fa-user",
+        "special_verses": "fa-star",
+        "mentions": "fa-list",
+        "islamic_history": "fa-history"
+    }
+    
+    # Create result object
+    for category, questions in category_questions.items():
+        result[category] = {
+            "title": category_titles.get(category, category),
+            "icon": category_icons.get(category, "fa-question"),
+            "questions": questions[:4]  # Limit to 4 questions per category
+        }
+    
+    return jsonify(result)
 
+@app.route('/search', methods=['POST'])
+def search():
+    """Search for questions matching a query"""
+    query = request.json.get('query', '')
+    qa_data = load_qa_data()
+    
+    if len(query) < 2:
+        return jsonify({'results': []})
+    
+    results = []
+    for q in qa_data.get("questions", []):
+        # Check main question
+        if query.lower() in q["question"].lower():
+            results.append({
+                'question': q["question"],
+                'preview': q["answer"][:50] + "..." if len(q["answer"]) > 50 else q["answer"]
+            })
+            continue
+        
+        # Check alternative phrasings
+        for alt in q.get("alternative_phrasings", []):
+            if query.lower() in alt.lower():
+                results.append({
+                    'question': q["question"],
+                    'preview': q["answer"][:50] + "..." if len(q["answer"]) > 50 else q["answer"]
+                })
+                break
+    
+    return jsonify({'results': results[:5]})  # Limit to 5 results
 
 if __name__ == '__main__':
     app.run(debug=True)
