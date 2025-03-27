@@ -41,6 +41,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Functions
     function loadDailyFact() {
+        // Select the element where the fact will be displayed
+        const factText = document.getElementById('fact-container'); // Assuming 'fact-container' is the correct ID
+    
+        // Fetch the daily fact from the backend
         fetch('/daily-fact')
             .then(response => {
                 if (!response.ok) {
@@ -49,14 +53,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                factText.textContent = data.fact;
+                // If you expect multiple facts and want to display them:
+                const facts = data.facts; // Expecting `data.facts` to be an array
+                if (facts && facts.length === 2) {
+                    // Display two facts (you can adjust as needed)
+                    factText.innerHTML = `<p class="text-base text-purple-800 fact-text leading-relaxed">${facts[0]}</p><p class="text-base text-purple-800 fact-text leading-relaxed mt-2">${facts[1]}</p>`;
+                } else {
+                    // Fallback for when the expected facts are missing or incomplete
+                    factText.innerHTML = `<p class="text-base text-purple-800 fact-text leading-relaxed">کوئی معلومات دستیاب نہیں۔</p>`;
+                }
+    
+                // Optionally, you can add a class to animate the fade-in effect
                 factText.classList.add('fade-in');
             })
             .catch(error => {
                 console.error('Error loading daily fact:', error);
-                factText.textContent = "قرآن میں 114 سورتیں ہیں۔";
+                factText.innerHTML = `<p class="text-base text-purple-800 fact-text leading-relaxed">قرآن میں 114 سورتیں ہیں۔</p>`;  // Default fact
             });
     }
+    
+    
 
     function loadCategories() {
         fetch('/categories')

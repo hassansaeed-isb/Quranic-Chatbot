@@ -158,7 +158,8 @@ def find_matching_question(user_input, qa_data):
                 "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
                 "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
                 "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
-                "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"]
+                "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"],
+                "islamic_history": ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
             }
             
             if question["category"] in category_keywords:
@@ -196,13 +197,14 @@ def get_related_questions(question, qa_data):
     
     if not question or "related_questions" not in question:
         # Determine category from user input if possible
-        categories = ["structure", "revelation", "prophets", "special_verses", "mentions"]
+        categories = ["structure", "revelation", "prophets", "special_verses", "mentions", "islamic_history"]
         category_keywords = {
             "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
             "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
             "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
             "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"],
-            "mentions": ["ذکر", "کتنی بار", "نام", "کتنی دفعہ"]
+            "mentions": ["ذکر", "کتنی بار", "نام", "کتنی دفعہ"],
+            "islamic_history": ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
         }
         
         matched_category = None
@@ -235,6 +237,11 @@ def get_related_questions(question, qa_data):
 def detect_intent(text):
     """Detect the intent of the user's message"""
     text_lower = text.lower()
+    
+    # Historical intent detection
+    history_keywords = ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
+    if any(word in text_lower for word in history_keywords):
+        return "history"
     
     # Fixed greeting detection - using specific full words/phrases only
     greeting_patterns = [
@@ -281,6 +288,7 @@ def process_question(user_input, qa_data):
     if intent == "thanks":
         return {
             'answer': random.choice(qa_data.get("thank_you_responses", ["آپ کا شکریہ!"])),
+
             'suggestions': ["مزید سوالات", "اللہ حافظ"],
             'confidence': 'high',
             'intent': 'thanks'
@@ -367,9 +375,11 @@ def popular_questions():
 
 @app.route('/daily-fact')
 def daily_fact():
-    """Return a random Quranic fact"""
-    qa_data = load_qa_data()
-    return jsonify({'fact': random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))})
+    """Return two random Quranic facts"""
+    qa_data = load_qa_data()  # Load the QA data from the file
+    facts = random.sample(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]), 2)  # Select two random facts
+    return jsonify({'facts': facts})  # Send the two facts as JSON
+
 
 @app.route('/categories')
 def get_categories():
@@ -388,7 +398,7 @@ def get_categories():
     
     # Create category objects
     category_titles = {
-        "structure": "قرآن کا ڈھانچہ",
+        "structure": "قرآن کا تعارف",
         "revelation": "قرآن کا نزول",
         "prophets": "انبیاء کرام",
         "special_verses": "خاص آیات",
