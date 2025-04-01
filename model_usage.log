@@ -1,0 +1,117 @@
+2025-04-01 23:28:54,049 - INFO - Model loaded successfully from models\processed_quran.pkl
+2025-04-01 23:28:54,052 - ERROR - Loaded model does not have search method
+2025-04-01 23:30:35,384 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:30:36,051 - INFO - Model loaded successfully from models\processed_quran.pkl (type: query_model)
+2025-04-01 23:30:36,063 - ERROR - Search error: eval() got an unexpected keyword argument 'top_k'
+2025-04-01 23:35:34,575 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:35:34,988 - INFO - Model loaded successfully from models\processed_quran.pkl (type: query_model)
+2025-04-01 23:35:34,989 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:35:35,025 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-01 23:35:35,026 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-01 23:35:35,043 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:35:36,252 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:35:36,657 - INFO - Model loaded successfully from models\processed_quran.pkl (type: query_model)
+2025-04-01 23:35:36,658 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:35:36,676 - WARNING -  * Debugger is active!
+2025-04-01 23:35:36,682 - INFO -  * Debugger PIN: 904-313-437
+2025-04-01 23:37:40,230 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:37:40,734 - INFO - Model loaded successfully from models\processed_quran.pkl (type: query_model)
+2025-04-01 23:40:12,358 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:40:12,845 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:40:12,846 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:40:12,846 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:40:50,974 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:40:51,332 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:40:51,332 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:40:51,332 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:40:51,332 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:40:51,354 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-01 23:40:51,354 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-01 23:40:51,365 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:40:52,460 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:40:52,844 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:40:52,844 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:40:52,845 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:40:52,846 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:40:52,861 - WARNING -  * Debugger is active!
+2025-04-01 23:40:52,864 - INFO -  * Debugger PIN: 904-313-437
+2025-04-01 23:40:54,046 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "GET / HTTP/1.1" 200 -
+2025-04-01 23:40:54,156 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-01 23:40:54,163 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2025-04-01 23:40:54,197 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-01 23:40:54,240 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "GET /daily-fact HTTP/1.1" 200 -
+2025-04-01 23:40:54,241 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "GET /categories HTTP/1.1" 200 -
+2025-04-01 23:40:54,307 - INFO - 127.0.0.1 - - [01/Apr/2025 23:40:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-04-01 23:41:31,477 - INFO - 127.0.0.1 - - [01/Apr/2025 23:41:31] "POST /ask HTTP/1.1" 200 -
+2025-04-01 23:43:57,796 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\app.py', reloading
+2025-04-01 23:43:57,801 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\app.py', reloading
+2025-04-01 23:43:58,546 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:43:59,861 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:44:00,280 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:44:00,281 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:44:00,287 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:44:00,287 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:44:00,306 - WARNING -  * Debugger is active!
+2025-04-01 23:44:00,308 - INFO -  * Debugger PIN: 904-313-437
+2025-04-01 23:44:04,782 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\improved_qa_engine.py', reloading
+2025-04-01 23:44:05,530 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:44:06,760 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:44:07,211 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:44:07,211 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:44:07,211 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:44:07,212 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:44:07,230 - WARNING -  * Debugger is active!
+2025-04-01 23:44:07,233 - INFO -  * Debugger PIN: 904-313-437
+2025-04-01 23:44:09,554 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\local_model_loader.py', reloading
+2025-04-01 23:44:09,558 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\local_model_loader.py', reloading
+2025-04-01 23:44:09,560 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\local_model_loader.py', reloading
+2025-04-01 23:44:10,432 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:44:11,657 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:44:12,012 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:44:12,012 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:44:12,014 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:44:12,014 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:44:12,026 - WARNING -  * Debugger is active!
+2025-04-01 23:44:12,028 - INFO -  * Debugger PIN: 904-313-437
+2025-04-01 23:44:18,166 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:44:18,647 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:44:18,648 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:44:18,648 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:44:27,266 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:44:27,644 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:44:27,645 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:44:27,645 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:44:27,645 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:44:27,665 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-04-01 23:44:27,666 - INFO - [33mPress CTRL+C to quit[0m
+2025-04-01 23:44:27,676 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:44:28,830 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:44:29,241 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:44:29,243 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:44:29,244 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:44:29,244 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:44:29,270 - WARNING -  * Debugger is active!
+2025-04-01 23:44:29,272 - INFO -  * Debugger PIN: 904-313-437
+2025-04-01 23:44:30,053 - INFO - 127.0.0.1 - - [01/Apr/2025 23:44:30] "GET / HTTP/1.1" 200 -
+2025-04-01 23:44:30,175 - INFO - 127.0.0.1 - - [01/Apr/2025 23:44:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-01 23:44:30,180 - INFO - 127.0.0.1 - - [01/Apr/2025 23:44:30] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2025-04-01 23:44:30,181 - INFO - 127.0.0.1 - - [01/Apr/2025 23:44:30] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-01 23:44:30,193 - INFO - 127.0.0.1 - - [01/Apr/2025 23:44:30] "GET /daily-fact HTTP/1.1" 200 -
+2025-04-01 23:44:30,196 - INFO - 127.0.0.1 - - [01/Apr/2025 23:44:30] "GET /categories HTTP/1.1" 200 -
+2025-04-01 23:45:04,758 - INFO - No matches found for 'توبه', trying more lenient matching
+2025-04-01 23:45:04,832 - INFO - 127.0.0.1 - - [01/Apr/2025 23:45:04] "POST /ask HTTP/1.1" 200 -
+2025-04-01 23:45:18,326 - INFO - 127.0.0.1 - - [01/Apr/2025 23:45:18] "POST /ask HTTP/1.1" 200 -
+2025-04-01 23:45:42,819 - INFO - 127.0.0.1 - - [01/Apr/2025 23:45:42] "POST /ask HTTP/1.1" 200 -
+2025-04-01 23:46:16,133 - INFO - 127.0.0.1 - - [01/Apr/2025 23:46:16] "POST /ask HTTP/1.1" 200 -
+2025-04-01 23:47:09,566 - INFO -  * Detected change in 'Z:\\Chatbot\\Quranic-Chatbot\\urdu_quranic_chatbot.py', reloading
+2025-04-01 23:47:10,121 - INFO -  * Restarting with watchdog (windowsapi)
+2025-04-01 23:47:11,338 - INFO - Loaded QA data from qa_data.json
+2025-04-01 23:47:11,751 - INFO - Model loaded successfully from models\processed_quran.pkl (type: dataframe)
+2025-04-01 23:47:11,752 - INFO - DataFrame has columns: ['Surah', 'Ayah', 'Translation']
+2025-04-01 23:47:11,752 - INFO - DataFrame shape: (6236, 3)
+2025-04-01 23:47:11,753 - INFO - Pre-loaded model from models\processed_quran.pkl
+2025-04-01 23:47:11,770 - WARNING -  * Debugger is active!
+2025-04-01 23:47:11,772 - INFO -  * Debugger PIN: 904-313-437

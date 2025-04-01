@@ -2,6 +2,7 @@
 """
 Urdu Quranic Chatbot Web Application
 Flask backend for the Quranic Q&A system with improved accuracy
+and integration with a pre-created search model
 """
 
 from flask import Flask, render_template, request, jsonify
@@ -16,6 +17,11 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 import string
+import logging
+from pathlib import Path
+
+# Import the model wrapper
+from local_model_loader import QuranModelWrapper
 
 # Uncomment these lines if you need to download NLTK resources
 # nltk.download('punkt')
@@ -23,8 +29,27 @@ import string
 
 app = Flask(__name__)
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger('QuranChatbot')
+
 # Path to the JSON data file
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'qa_data.json')
+
+# Initialize the model wrapper
+model_path = Path("./models/processed_quran.pkl")
+model_wrapper = QuranModelWrapper(model_path)
+
+# Try to pre-load the model
+if model_path.exists():
+    model_wrapper.load()
+    logger.info(f"Pre-loaded model from {model_path}")
+else:
+    logger.warning(f"Model not found at {model_path}. Will try to create fallback database.")
 
 # Load the question-answer data from JSON file
 def load_qa_data():
@@ -32,7 +57,7 @@ def load_qa_data():
         with open(DATA_FILE, 'r', encoding='utf-8') as file:
             return json.load(file)
     except Exception as e:
-        print(f"Error loading QA data: {e}")
+        logger.error(f"Error loading QA data: {e}")
         # Return minimal data structure in case of error
         return {"questions": [], "categories": {}, "facts": [], 
                 "greetings": [], "thank_you_responses": [], 
@@ -271,6 +296,61 @@ def detect_intent(text):
     # Default to question
     return "question"
 
+# Process the user's question using the search model for backup
+def search_quran(query):
+    """Search Quran using the loaded model and include other relevant matches"""
+    try:
+        # Get search results
+        results = model_wrapper.search(query, top_k=3)
+        
+        if "error" in results:
+            logger.warning(f"Search error: {results['error']}")
+            return None
+            
+        if results["primary_match"]:
+            primary = results["primary_match"]
+            # Format the answer with the verse and reference
+            answer = f"{primary['verse']}\n\n📖 {primary['reference']}"
+            
+            # Include other matches in the answer if available
+            other_matches = []
+            if results.get("other_matches"):
+                answer += "\n\n**مزید متعلقہ نتائج:**\n"
+                for i, match in enumerate(results["other_matches"], 1):
+                    other_match_text = f"{i}. {match['verse']}\n📖 {match['reference']}"
+                    answer += other_match_text + "\n\n"
+                    other_matches.append(match)
+            
+            # Create related suggestions from other matches
+            suggestions = []
+            related_queries = []
+            
+            for match in other_matches:
+                # Extract a potential follow-up question from the verse
+                verse_parts = match['verse'].split('،')
+                if len(verse_parts) > 1:
+                    q = verse_parts[0] + "؟"
+                    if len(q) > 10 and len(q) < 60:  # Reasonable question length
+                        related_queries.append(q)
+                        
+            # If we have related queries, add them to suggestions
+            if related_queries:
+                suggestions.extend(related_queries[:2])
+            
+            # Add some general follow-up questions
+            suggestions.append(f"مزید معلومات {query} کے بارے میں")
+            
+            return {
+                "answer": answer,
+                "suggestions": suggestions
+            }
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error in search_quran: {e}")
+        return None
+
 # Process the user's question and determine the answer
 def process_question(user_input, qa_data):
     """Process user input and return appropriate response"""
@@ -288,7 +368,6 @@ def process_question(user_input, qa_data):
     if intent == "thanks":
         return {
             'answer': random.choice(qa_data.get("thank_you_responses", ["آپ کا شکریہ!"])),
-
             'suggestions': ["مزید سوالات", "اللہ حافظ"],
             'confidence': 'high',
             'intent': 'thanks'
@@ -319,30 +398,51 @@ def process_question(user_input, qa_data):
     match = find_matching_question(user_input, qa_data)
     
     if match:
+        # Direct match from QA database
         related = get_related_questions(match, qa_data)
         return {
             'answer': match["answer"],
             'confidence': 'high',
             'suggestions': [q["question"] for q in related],
-            'intent': 'question'
+            'intent': 'question',
+            'source': 'qa_database'
         }
     else:
-        # No match found
-        fact = random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))
-        not_found = random.choice(qa_data.get("not_found_responses", 
+        # Try using the search model if no match found
+        search_result = None
+        if model_wrapper.loaded:
+            search_result = search_quran(user_input)
+        
+        if search_result:
+            # Match from search model
+            return {
+                'answer': search_result["answer"],
+                'confidence': 'medium',
+                'suggestions': search_result["suggestions"],
+                'fact': random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"])),
+                'intent': 'question',
+                'source': 'search_model'
+            }
+        else:
+            # No match found
+            fact = random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))
+            not_found = random.choice(qa_data.get("not_found_responses", 
                                   ["معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔"]))
-        return {
-            'answer': not_found,
-            'fact': fact,
-            'confidence': 'none',
-            'suggestions': [q["question"] for q in get_related_questions(None, qa_data)],
-            'intent': 'unknown'
-        }
+            return {
+                'answer': not_found,
+                'fact': fact,
+                'confidence': 'none',
+                'suggestions': [q["question"] for q in get_related_questions(None, qa_data)],
+                'intent': 'unknown'
+            }
 
 # Routes
 @app.route('/')
 def home():
     """Render the home page"""
+    # Ensure model is loaded
+    if not model_wrapper.loaded and model_path.exists():
+        model_wrapper.load()
     return render_template('index.html')
 
 @app.route('/ask', methods=['POST'])
@@ -358,6 +458,36 @@ def ask():
     result = process_question(user_input, qa_data)
     
     return jsonify(result)
+
+@app.route('/check-model', methods=['GET'])
+def check_model():
+    """API endpoint to check if the model is loaded"""
+    try:
+        is_loaded = model_wrapper.loaded
+        model_exists = model_path.exists()
+        
+        if is_loaded:
+            status = "Model is loaded and ready"
+            model_type = model_wrapper.model_type if hasattr(model_wrapper, 'model_type') else "unknown"
+        elif model_exists:
+            status = "Model file exists but is not loaded yet"
+            model_type = "unknown"
+        else:
+            status = "Model file not found"
+            model_type = "none"
+            
+        return jsonify({
+            'success': is_loaded,
+            'model_exists': model_exists,
+            'model_type': model_type,
+            'status': status,
+            'model_path': str(model_path)
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/popular-questions')
 def popular_questions():
@@ -455,5 +585,49 @@ def search():
     
     return jsonify({'results': results[:5]})  # Limit to 5 results
 
+@app.route('/load-model', methods=['POST'])
+def load_model():
+    """API endpoint to explicitly load the model"""
+    try:
+        if model_wrapper.loaded:
+            return jsonify({
+                'success': True,
+                'message': 'Model is already loaded',
+                'model_type': model_wrapper.model_type if hasattr(model_wrapper, 'model_type') else "unknown"
+            })
+        
+        if not model_path.exists():
+            return jsonify({
+                'success': False,
+                'message': f'Model file not found at {model_path}'
+            }), 404
+            
+        success = model_wrapper.load()
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Model loaded successfully',
+                'model_type': model_wrapper.model_type if hasattr(model_wrapper, 'model_type') else "unknown"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to load model'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
+    # Try to pre-load the model when starting the server
+    if model_path.exists() and not model_wrapper.loaded:
+        try:
+            model_wrapper.load()
+            logger.info(f"Pre-loaded model from {model_path}")
+        except Exception as e:
+            logger.error(f"Failed to pre-load model: {e}")
+    
     app.run(debug=True)
