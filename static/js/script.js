@@ -173,14 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add bot message to chat
             addMessage(data.answer, 'bot');
             
-            // Add fact if it exists
-            if (data.fact) {
-                setTimeout(() => {
-                    addMessage(`معلومات: ${data.fact}`, 'bot', 'fact');
-                }, 500);
-            }
-            
-            // Popular questions and suggestions functionality removed
             
             // Reset processing state
             isProcessing = false;
@@ -450,5 +442,109 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, {passive: false});
     
-    // Popular questions initialization removed
+    function formatVerseText(text) {
+        // Check if this contains Quranic references
+        if (!text.includes('📖')) {
+            return text; // Return as is if no references
+        }
+        
+        // Split by multiple verses if they exist
+        if (text.includes('**مزید متعلقہ نتائج:**')) {
+            const parts = text.split('**مزید متعلقہ نتائج:**');
+            const mainVerse = formatSingleVerse(parts[0].trim());
+            
+            // Format additional verses if they exist
+            let additionalVerses = '';
+            if (parts.length > 1 && parts[1].trim()) {
+                // Split additional results by numbered items
+                const additionalParts = parts[1].trim().split(/\d+\.\s+/);
+                additionalVerses = '<div class="mt-4 pt-2 border-t border-emerald-200">' +
+                                   '<p class="text-emerald-700 font-semibold mb-2">**مزید متعلقہ نتائج:**</p>';
+                
+                // Process each additional verse (skip the first empty split)
+                for (let i = 1; i < additionalParts.length; i++) {
+                    if (additionalParts[i].trim()) {
+                        additionalVerses += `<div class="mt-2 mb-3">${formatSingleVerse(additionalParts[i].trim())}</div>`;
+                    }
+                }
+                additionalVerses += '</div>';
+            }
+            
+            return mainVerse + additionalVerses;
+        } else {
+            // Single verse reference
+            return formatSingleVerse(text);
+        }
+    }
+    
+    function formatSingleVerse(text) {
+        // Split the verse from the reference
+        const parts = text.split('📖');
+        
+        if (parts.length < 2) {
+            return text; // Not a reference format we recognize
+        }
+        
+        const verseText = parts[0].trim();
+        const reference = parts[1].trim();
+        
+        // Create formatted HTML
+        return `<div class="verse-container">
+                  <p class="verse-text text-gray-800 mb-3 leading-relaxed">${verseText}</p>
+                  <p class="verse-reference text-emerald-700 font-semibold text-sm">📖 ${reference}</p>
+                </div>`;
+    }
+    
+    function addMessage(text, sender, type = 'normal') {
+        // Create message element
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex items-start mb-3 chat-message';
+        
+        if (sender === 'user') {
+            messageDiv.classList.add('justify-end');
+            messageDiv.innerHTML = `
+                <div class="ml-2 py-2 px-3 bg-blue-100 user-message max-w-[75%] md:max-w-xs shadow-sm">
+                    <p class="text-gray-800 text-sm">${text}</p>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                    <i class="fas fa-user"></i>
+                </div>
+            `;
+        } else {
+            let backgroundColor;
+            let icon;
+            
+            if (type === 'fact') {
+                backgroundColor = 'bg-purple-100';
+                icon = 'fa-lightbulb';
+            } else if (type === 'error') {
+                backgroundColor = 'bg-red-100';
+                icon = 'fa-exclamation-circle';
+            } else {
+                backgroundColor = 'bg-emerald-100';
+                icon = 'fa-robot';
+            }
+            
+            // Format Quranic references if needed
+            let formattedText = text;
+            if (type !== 'fact' && type !== 'error') {
+                formattedText = formatVerseText(text);
+            }
+            
+            messageDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ms-3">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="mr-2 py-2 px-3 ${backgroundColor} bot-message max-w-[75%] md:max-w-xs shadow-sm">
+                    <div class="text-gray-800 text-sm">${formattedText}</div>
+                </div>
+            `;
+        }
+        
+        // Add message to chat
+        chatMessages.appendChild(messageDiv);
+        
+        // Scroll to bottom with a smooth animation
+        scrollToBottom();
+    }
 });

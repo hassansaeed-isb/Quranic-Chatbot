@@ -23,10 +23,6 @@ from pathlib import Path
 # Import the model wrapper
 from local_model_loader import QuranModelWrapper
 
-# Uncomment these lines if you need to download NLTK resources
-# nltk.download('punkt')
-# nltk.download('stopwords')
-
 app = Flask(__name__)
 
 # Configure logging
@@ -44,18 +40,127 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), 'qa_data.json')
 model_path = Path("./models/processed_quran.pkl")
 model_wrapper = QuranModelWrapper(model_path)
 
-# Try to pre-load the model
+# Global cache for QA data
+qa_data_cache = None
+
+# Category mappings for reuse
+CATEGORY_TITLES = {
+    "structure": "قرآن کا تعارف",
+    "revelation": "قرآن کا نزول",
+    "prophets": "انبیاء کرام",
+    "special_verses": "خاص آیات",
+    "mentions": "مختلف ذکر",
+    "islamic_history": "اسلامی تاریخ"
+}
+
+CATEGORY_ICONS = {
+    "structure": "fa-book-open",
+    "revelation": "fa-moon",
+    "prophets": "fa-user",
+    "special_verses": "fa-star",
+    "mentions": "fa-list",
+    "islamic_history": "fa-history"
+}
+
+CATEGORY_KEYWORDS = {
+    "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
+    "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
+    "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
+    "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"],
+    "mentions": ["ذکر", "کتنی بار", "نام", "کتنی دفعہ"],
+    "islamic_history": ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
+}
+
+# Dictionary of prophet-related patterns and their answers
+PROPHET_QUESTIONS = {
+    "most_mentioned_prophet": {
+        "patterns": [
+            "سب سے زیادہ ذکر کس نبی کا",
+            "کس نبی کا سب سے زیادہ ذکر",
+            "کس پیغمبر کا سب سے زیادہ ذکر",
+            "سب سے زیادہ کس نبی کا ذکر",
+            "کونسے نبی کا سب سے زیادہ ذکر"
+        ],
+        "answer": """قرآن میں سب سے زیادہ حضرت موسیٰ علیہ السلام کا ذکر آیا ہے۔ ان کا نام یا ان سے متعلق واقعات تقریباً 136 مرتبہ قرآن میں بیان ہوئے ہیں۔ دوسرے نمبر پر حضرت ابراہیم علیہ السلام (69 مرتبہ) اور پھر حضرت نوح علیہ السلام (43 مرتبہ) کا ذکر ہے۔ حضرت محمد ﷺ کا نام قرآن میں صرف 4 مرتبہ آیا ہے لیکن آپ کو مختلف القاب سے بہت زیادہ خطاب کیا گیا ہے۔"""
+    },
+    "prophet_jesus_mentions": {
+        "patterns": [
+            "کتنی بار حضرت عیسیٰ",
+            "عیسیٰ علیہ السلام کا ذکر",
+            "حضرت عیسیٰ کا کتنا ذکر",
+            "عیسیٰ کا نام کتنی بار"
+        ],
+        "answer": """قرآن میں حضرت عیسیٰ علیہ السلام کا ذکر 25 مرتبہ آیا ہے۔ ان کا نام 'عیسیٰ' کے طور پر 25 بار آیا ہے، اور 'ابن مریم' (مریم کے بیٹے) کے طور پر بھی کئی بار ذکر کیا گیا ہے۔ حضرت عیسیٰ علیہ السلام کا ذکر 11 مختلف سورتوں میں آیا ہے، بشمول سورۃ البقرہ، آل عمران، النساء، المائدہ، الأنعام، مریم، الأحزاب، الشوریٰ، الزخرف، الحدید اور الصف۔"""
+    },
+    "prophet_ibrahim_mentions": {
+        "patterns": [
+            "کتنی بار حضرت ابراہیم",
+            "ابراہیم علیہ السلام کا ذکر",
+            "حضرت ابراہیم کا کتنا ذکر",
+            "ابراہیم کا نام کتنی بار"
+        ],
+        "answer": """قرآن میں حضرت ابراہیم علیہ السلام کا ذکر 69 مرتبہ آیا ہے۔ ان کا تذکرہ 25 سورتوں میں ملتا ہے، جس میں سورۃ البقرہ، آل عمران، النساء، الانعام، ہود، ابراہیم، الحجر، مریم، الانبیاء، الحج، الشعراء، العنکبوت، الصافات، ص، الشوریٰ، الزخرف، الذاریات، النجم، الحدید، الممتحنہ، اور الاعلی شامل ہیں۔"""
+    },
+    "prophet_muhammad_mentions": {
+        "patterns": [
+            "کتنی بار حضرت محمد",
+            "محمد صلی اللہ علیہ وسلم کا ذکر",
+            "حضرت محمد کا کتنا ذکر",
+            "محمد کا نام کتنی بار"
+        ],
+        "answer": """قرآن میں حضرت محمد ﷺ کا نام براہ راست صرف 4 مرتبہ آیا ہے۔ یہ ذکر سورۃ آل عمران (آیت 144)، سورۃ الأحزاب (آیت 40)، سورۃ محمد (آیت 2) اور سورۃ الفتح (آیت 29) میں ملتا ہے۔ تاہم، آپ کا ذکر مختلف القاب جیسے 'رسول'، 'نبی'، 'بشیر'، 'نذیر'، اور 'مزمل' وغیرہ کے ساتھ بہت زیادہ بار آیا ہے۔ اگر ان تمام اشاروں کو شمار کیا جائے تو یہ تعداد 70 سے زیادہ ہے۔"""
+    },
+    "prophet_noah_mentions": {
+        "patterns": [
+            "کتنی بار حضرت نوح",
+            "نوح علیہ السلام کا ذکر",
+            "حضرت نوح کا کتنا ذکر",
+            "نوح کا نام کتنی بار"
+        ],
+        "answer": """قرآن میں حضرت نوح علیہ السلام کا ذکر تقریباً 43 مرتبہ آیا ہے۔ حضرت نوح علیہ السلام قرآن میں تیسرے سب سے زیادہ ذکر کیے جانے والے نبی ہیں، حضرت موسیٰ علیہ السلام (136 بار) اور حضرت ابراہیم علیہ السلام (69 بار) کے بعد۔ قرآن میں ایک پوری سورت 'سورۃ نوح' بھی نازل ہوئی ہے جو کہ قرآن کی 71ویں سورت ہے۔"""
+    },
+    "total_prophets_quran": {
+        "patterns": [
+            "قرآن میں کتنے انبیاء",
+            "قرآن میں کتنے نبیوں",
+            "کتنے پیغمبروں کے نام",
+            "کتنے انبیاء کا تذکرہ"
+        ],
+        "answer": """قرآن میں کل 25 انبیاء کرام کا نام لے کر ذکر کیا گیا ہے۔ یہ انبیاء کرام ہیں: آدم، ادریس، نوح، ہود، صالح، ابراہیم، لوط، اسماعیل، اسحاق، یعقوب، یوسف، ایوب، شعیب، موسی، ہارون، ذوالکفل، داؤد، سلیمان، الیاس، الیسع، یونس، زکریا، یحییٰ، عیسیٰ اور محمد (علیہم السلام)۔ قرآن میں ان کے علاوہ بھی کچھ انبیاء کا ذکر ہے، لیکن ان کے نام نہیں بتائے گئے ہیں۔"""
+    }
+}
+
+# Intent detection patterns
+GREETING_PATTERNS = [
+    "السلام علیکم", "سلام", "آداب", "ہیلو", "ہائے", "اسلام علیکم", "جی ", 
+    "hello", "hi ", "hey", "assalam", "salam"
+]
+
+THANKS_WORDS = ["شکریہ", "مہربانی", "احسان", "ممنون", "تھینکس", "thanks", "thank you", "thanks a lot"]
+FAREWELL_WORDS = ["اللہ حافظ", "خدا حافظ", "فی امان اللہ", "الوداع", "بائے", "bye", "goodbye", "see you"]
+HELP_WORDS = ["مدد", "help", "کیسے", "how to", "guide", "explain"]
+HISTORY_KEYWORDS = ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
+
+# Try to pre-load the model at startup
 if model_path.exists():
     model_wrapper.load()
     logger.info(f"Pre-loaded model from {model_path}")
 else:
     logger.warning(f"Model not found at {model_path}. Will try to create fallback database.")
 
-# Load the question-answer data from JSON file
-def load_qa_data():
+def load_qa_data(force_reload=False):
+    """Load the question-answer data from JSON file with optional caching"""
+    global qa_data_cache
+    
+    # Return cached data if available and not forcing reload
+    if qa_data_cache is not None and not force_reload:
+        return qa_data_cache
+    
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as file:
-            return json.load(file)
+            qa_data_cache = json.load(file)
+            logger.info(f"Loaded QA data from {DATA_FILE}")
+            return qa_data_cache
     except Exception as e:
         logger.error(f"Error loading QA data: {e}")
         # Return minimal data structure in case of error
@@ -63,19 +168,28 @@ def load_qa_data():
                 "greetings": [], "thank_you_responses": [], 
                 "farewell_responses": [], "not_found_responses": []}
 
-# Get question by ID
 def get_question_by_id(question_id, data):
-    for question in data["questions"]:
-        if question["id"] == question_id:
-            return question
-    return None
+    """Get question by ID with O(1) complexity using dictionary lookup"""
+    # Create a lookup dictionary if it doesn't exist
+    if not hasattr(get_question_by_id, "lookup_dict"):
+        get_question_by_id.lookup_dict = {}
+        
+    # Rebuild lookup if data has changed
+    if id(data) not in get_question_by_id.lookup_dict:
+        lookup = {}
+        for question in data.get("questions", []):
+            if "id" in question:
+                lookup[question["id"]] = question
+        get_question_by_id.lookup_dict[id(data)] = lookup
+    
+    # Return the question or None
+    return get_question_by_id.lookup_dict[id(data)].get(question_id)
 
-# Text preprocessing
 def preprocess_text(text, is_urdu=True):
-    """
-    Clean and normalize text for better matching.
-    Handles both Urdu and English text.
-    """
+    """Clean and normalize text for better matching"""
+    if not text:
+        return ""
+        
     # For Urdu text
     if is_urdu:
         # Remove Urdu punctuation
@@ -88,25 +202,17 @@ def preprocess_text(text, is_urdu=True):
         text = text.lower()
         
     # Normalize whitespace for both
-    text = re.sub(r'\s+', ' ', text).strip()
-    
-    return text
+    return re.sub(r'\s+', ' ', text).strip()
 
-# Tokenize Urdu text
 def tokenize_urdu(text):
     """Tokenize Urdu text into words"""
     # Basic tokenization by whitespace
     tokens = text.split()
     # Further clean tokens
-    tokens = [token.strip() for token in tokens if token.strip()]
-    return tokens
+    return [token.strip() for token in tokens if token.strip()]
 
-# Advanced similarity score function
 def advanced_similarity_score(query, reference, is_urdu=True):
-    """
-    Calculate advanced similarity between query and reference texts
-    using multiple techniques including word overlap and sequence matching.
-    """
+    """Calculate advanced similarity between query and reference texts"""
     # Preprocess both texts
     query_processed = preprocess_text(query, is_urdu)
     reference_processed = preprocess_text(reference, is_urdu)
@@ -141,18 +247,15 @@ def advanced_similarity_score(query, reference, is_urdu=True):
     word_overlap = matching_words / total_words if total_words > 0 else 0
     
     # Combined similarity (weighted average)
-    combined_similarity = (0.6 * sequence_similarity) + (0.4 * word_overlap)
-    
-    return combined_similarity
+    return (0.6 * sequence_similarity) + (0.4 * word_overlap)
 
-# Find matching questions using advanced methods
 def find_matching_question(user_input, qa_data):
     """Find the best matching question using advanced methods"""
     processed_input = preprocess_text(user_input)
     
     # Direct match check with higher threshold for short queries
-    for question in qa_data["questions"]:
-        question_text = question["question"]
+    for question in qa_data.get("questions", []):
+        question_text = question.get("question", "")
         if advanced_similarity_score(processed_input, question_text) > 0.8:
             return question
         
@@ -161,14 +264,14 @@ def find_matching_question(user_input, qa_data):
             if advanced_similarity_score(processed_input, alt) > 0.8:
                 return question
     
-    # Keyword matching with improved weighting (adjust threshold for short queries)
+    # Keyword matching with improved weighting
     best_match = None
     highest_score = 0
     
     # Lower threshold for short queries
     threshold = 2 if len(processed_input.split()) <= 3 else 3
     
-    for question in qa_data["questions"]:
+    for question in qa_data.get("questions", []):
         score = 0
         
         # Check for keywords
@@ -178,19 +281,10 @@ def find_matching_question(user_input, qa_data):
                 score += (len(keyword) ** 1.5) * 0.1
         
         # Add category weighting
-        if "category" in question:
-            category_keywords = {
-                "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
-                "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
-                "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
-                "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"],
-                "islamic_history": ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
-            }
-            
-            if question["category"] in category_keywords:
-                for cat_keyword in category_keywords[question["category"]]:
-                    if cat_keyword in processed_input.lower():
-                        score += 2  # Boost category relevance
+        if "category" in question and question["category"] in CATEGORY_KEYWORDS:
+            for cat_keyword in CATEGORY_KEYWORDS[question["category"]]:
+                if cat_keyword in processed_input.lower():
+                    score += 2  # Boost category relevance
         
         if score > highest_score:
             highest_score = score
@@ -204,8 +298,8 @@ def find_matching_question(user_input, qa_data):
     best_match = None
     highest_similarity = 0
     
-    for question in qa_data["questions"]:
-        similarity = advanced_similarity_score(processed_input, question["question"])
+    for question in qa_data.get("questions", []):
+        similarity = advanced_similarity_score(processed_input, question.get("question", ""))
         if similarity > highest_similarity:
             highest_similarity = similarity
             best_match = question
@@ -215,32 +309,25 @@ def find_matching_question(user_input, qa_data):
     
     return None
 
-# Get related questions as suggestions (improved algorithm)
 def get_related_questions(question, qa_data):
     """Get related questions with smart fallback"""
     related = []
     
     if not question or "related_questions" not in question:
         # Determine category from user input if possible
-        categories = ["structure", "revelation", "prophets", "special_verses", "mentions", "islamic_history"]
-        category_keywords = {
-            "structure": ["پارہ", "سورت", "آیت", "رکوع", "حروف", "الفاظ"],
-            "revelation": ["نزول", "وحی", "نازل", "مکہ", "مدینہ"],
-            "prophets": ["نبی", "پیغمبر", "رسول", "محمد", "عیسیٰ", "موسیٰ"],
-            "special_verses": ["خاص", "فضیلت", "مشہور", "بڑی", "چھوٹی"],
-            "mentions": ["ذکر", "کتنی بار", "نام", "کتنی دفعہ"],
-            "islamic_history": ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
-        }
-        
         matched_category = None
-        for cat, keywords in category_keywords.items():
-            if any(kw in str(question) for kw in keywords):
-                matched_category = cat
-                break
+        
+        if question and isinstance(question, dict) and "category" in question:
+            matched_category = question["category"]
+        elif isinstance(question, str):
+            for cat, keywords in CATEGORY_KEYWORDS.items():
+                if any(kw in question for kw in keywords):
+                    matched_category = cat
+                    break
         
         # Get questions from the matched category or popular questions
         if matched_category:
-            cat_questions = [q for q in qa_data["questions"] if q.get("category") == matched_category]
+            cat_questions = [q for q in qa_data.get("questions", []) if q.get("category") == matched_category]
             related = cat_questions[:3]
         else:
             # Popular questions as fallback
@@ -258,47 +345,60 @@ def get_related_questions(question, qa_data):
     
     return related[:3]  # Limit to 3 related questions
 
-# Intent detection
 def detect_intent(text):
     """Detect the intent of the user's message"""
+    if not text:
+        return "question"  # Default
+        
     text_lower = text.lower()
     
     # Historical intent detection
-    history_keywords = ["پہلا", "سب سے پہلے", "اسلام کا آغاز", "شہید", "خاتون"]
-    if any(word in text_lower for word in history_keywords):
+    if any(word in text_lower for word in HISTORY_KEYWORDS):
         return "history"
     
-    # Fixed greeting detection - using specific full words/phrases only
-    greeting_patterns = [
-        "السلام علیکم", "سلام", "آداب", "ہیلو", "ہائے", "اسلام علیکم", "جی ", 
-        "hello", "hi ", "hey", "assalam", "salam"
-    ]
-    
-    for greeting in greeting_patterns:
-        if greeting in text_lower:
-            return "greeting"
+    # Greeting detection
+    if any(greeting in text_lower for greeting in GREETING_PATTERNS):
+        return "greeting"
     
     # Thanks
-    thanks_words = ["شکریہ", "مہربانی", "احسان", "ممنون", "تھینکس", "thanks", "thank you", "thanks a lot"]
-    if any(word in text_lower for word in thanks_words):
+    if any(word in text_lower for word in THANKS_WORDS):
         return "thanks"
     
     # Farewell
-    farewells = ["اللہ حافظ", "خدا حافظ", "فی امان اللہ", "الوداع", "بائے", "bye", "goodbye", "see you"]
-    if any(farewell in text_lower for farewell in farewells):
+    if any(farewell in text_lower for farewell in FAREWELL_WORDS):
         return "farewell"
     
     # Help
-    help_words = ["مدد", "help", "کیسے", "how to", "guide", "explain"]
-    if any(word in text_lower for word in help_words):
+    if any(word in text_lower for word in HELP_WORDS):
         return "help"
     
     # Default to question
     return "question"
 
-# Process the user's question using the search model for backup
+def detect_specific_questions(user_input):
+    """Detect specific high-priority questions that need direct answers"""
+    if not user_input:
+        return None
+        
+    # Normalize user input for matching
+    normalized_input = preprocess_text(user_input).lower()
+    
+    # Check each question pattern
+    for q_type, data in PROPHET_QUESTIONS.items():
+        for pattern in data["patterns"]:
+            if pattern in normalized_input:
+                return {
+                    "type": q_type,
+                    "answer": data["answer"]
+                }
+    
+    return None
+
 def search_quran(query):
     """Search Quran using the loaded model and include other relevant matches"""
+    if not query or not model_wrapper.loaded:
+        return None
+        
     try:
         # Get search results
         results = model_wrapper.search(query, top_k=3)
@@ -309,7 +409,7 @@ def search_quran(query):
             
         if results["primary_match"]:
             primary = results["primary_match"]
-            # Format the answer with the verse and reference
+            # Format the answer with the verse and reference (improved spacing)
             answer = f"{primary['verse']}\n\n📖 {primary['reference']}"
             
             # Include other matches in the answer if available
@@ -351,9 +451,35 @@ def search_quran(query):
         logger.error(f"Error in search_quran: {e}")
         return None
 
-# Process the user's question and determine the answer
 def process_question(user_input, qa_data):
     """Process user input and return appropriate response"""
+    if not user_input:
+        return {
+            'answer': "کوئی سوال نہیں ملا۔ براہ کرم دوبارہ کوشش کریں۔",
+            'confidence': 'none',
+            'intent': 'unknown'
+        }
+    
+    # First check for specific high-priority questions
+    specific_question = detect_specific_questions(user_input)
+    if specific_question:
+        related = []
+        if specific_question["type"].startswith("prophet_") or specific_question["type"] == "most_mentioned_prophet":
+            # Get related questions for prophets
+            for q in qa_data.get("questions", []):
+                if q.get("category") == "prophets" and q.get("id", "") != specific_question["type"]:
+                    related.append(q)
+                    if len(related) >= 3:
+                        break
+        
+        return {
+            'answer': specific_question["answer"],
+            'confidence': 'high',
+            'suggestions': [q["question"] for q in related] if related else ["قرآن میں کتنی بار حضرت ابراہیم کا ذکر آیا ہے"],
+            'intent': 'question',
+            'source': 'specific_answers'
+        }
+    
     # Detect intent
     intent = detect_intent(user_input)
     
@@ -419,18 +545,15 @@ def process_question(user_input, qa_data):
                 'answer': search_result["answer"],
                 'confidence': 'medium',
                 'suggestions': search_result["suggestions"],
-                'fact': random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"])),
                 'intent': 'question',
                 'source': 'search_model'
             }
         else:
             # No match found
-            fact = random.choice(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))
             not_found = random.choice(qa_data.get("not_found_responses", 
-                                  ["معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔"]))
+                              ["معاف کیجیے، میں اس سوال کا جواب نہیں جانتا۔"]))
             return {
                 'answer': not_found,
-                'fact': fact,
                 'confidence': 'none',
                 'suggestions': [q["question"] for q in get_related_questions(None, qa_data)],
                 'intent': 'unknown'
@@ -506,10 +629,10 @@ def popular_questions():
 @app.route('/daily-fact')
 def daily_fact():
     """Return two random Quranic facts"""
-    qa_data = load_qa_data()  # Load the QA data from the file
-    facts = random.sample(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]), 2)  # Select two random facts
-    return jsonify({'facts': facts})  # Send the two facts as JSON
-
+    qa_data = load_qa_data()
+    facts = random.sample(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]), 
+                        min(2, len(qa_data.get("facts", ["قرآن میں 114 سورتیں ہیں۔"]))))
+    return jsonify({'facts': facts})
 
 @app.route('/categories')
 def get_categories():
@@ -526,30 +649,11 @@ def get_categories():
                 category_questions[category] = []
             category_questions[category].append(question["question"])
     
-    # Create category objects
-    category_titles = {
-        "structure": "قرآن کا تعارف",
-        "revelation": "قرآن کا نزول",
-        "prophets": "انبیاء کرام",
-        "special_verses": "خاص آیات",
-        "mentions": "مختلف ذکر",
-        "islamic_history": "اسلامی تاریخ"
-    }
-    
-    category_icons = {
-        "structure": "fa-book-open",
-        "revelation": "fa-moon",
-        "prophets": "fa-user",
-        "special_verses": "fa-star",
-        "mentions": "fa-list",
-        "islamic_history": "fa-history"
-    }
-    
     # Create result object
     for category, questions in category_questions.items():
         result[category] = {
-            "title": category_titles.get(category, category),
-            "icon": category_icons.get(category, "fa-question"),
+            "title": CATEGORY_TITLES.get(category, category),
+            "icon": CATEGORY_ICONS.get(category, "fa-question"),
             "questions": questions[:4]  # Limit to 4 questions per category
         }
     
@@ -616,6 +720,53 @@ def load_model():
                 'message': 'Failed to load model'
             }), 500
     except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/reload-qa-data', methods=['POST'])
+def reload_qa_data():
+    """API endpoint to reload the QA data"""
+    try:
+        # Store the current data for comparison
+        old_data = None
+        qa_file = Path(DATA_FILE)
+        if qa_file.exists():
+            try:
+                with open(qa_file, "r", encoding="utf-8") as f:
+                    old_data = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load existing QA data: {e}")
+        
+        # Force reload from file
+        global qa_data_cache
+        qa_data_cache = None  # Clear cache
+        new_data = load_qa_data(force_reload=True)
+        
+        # Check if data was successfully loaded
+        if not new_data:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to load new QA data'
+            }), 500
+        
+        # Compare data sizes to give feedback
+        old_count = len(old_data.get("questions", [])) if old_data else 0
+        new_count = len(new_data.get("questions", [])) if new_data else 0
+        
+        # Reset the lookup dictionary in get_question_by_id
+        if hasattr(get_question_by_id, "lookup_dict"):
+            get_question_by_id.lookup_dict = {}
+        
+        return jsonify({
+            'success': True,
+            'message': f'QA data reloaded successfully. {old_count} -> {new_count} questions',
+            'old_count': old_count,
+            'new_count': new_count
+        })
+    except Exception as e:
+        logger.error(f"Error reloading QA data: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
