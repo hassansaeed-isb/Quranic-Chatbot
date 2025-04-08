@@ -72,8 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    
-
     function loadCategories() {
         fetch('/categories')
             .then(response => {
@@ -125,8 +123,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 createDefaultCategories();
             });
     }
-
-    // Popular questions functionality removed
 
     function sendQuestion() {
         const question = questionInput.value.trim();
@@ -225,12 +221,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 icon = 'fa-robot';
             }
             
+            // Format Quranic references if needed
+            let formattedText = text;
+            if (type !== 'fact' && type !== 'error') {
+                formattedText = formatVerseText(text);
+            }
+            
             messageDiv.innerHTML = `
                 <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ms-3">
                     <i class="fas ${icon}"></i>
                 </div>
                 <div class="mr-2 py-2 px-3 ${backgroundColor} bot-message max-w-[75%] md:max-w-xs shadow-sm">
-                    <p class="text-gray-800 text-sm">${text}</p>
+                    <div class="text-gray-800 text-sm">${formattedText}</div>
                 </div>
             `;
         }
@@ -238,11 +240,104 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add message to chat
         chatMessages.appendChild(messageDiv);
         
-        // Scroll to bottom with a smooth animation
+        // Ensure the chat container scrolls to the bottom after each new message
         scrollToBottom();
     }
     
-    // Suggestions display functionality removed
+    function formatVerseText(text) {
+        // Check if this contains Quranic references
+        if (!text.includes('📖')) {
+            return text; // Return as is if no references
+        }
+        
+        // Split by multiple verses if they exist
+        if (text.includes('**مزید متعلقہ نتائج:**')) {
+            const parts = text.split('**مزید متعلقہ نتائج:**');
+            const mainVerse = formatSingleVerse(parts[0].trim());
+            
+            // Format additional verses if they exist
+            let additionalVerses = '';
+            if (parts.length > 1 && parts[1].trim()) {
+                // Split additional results by numbered items
+                const additionalParts = parts[1].trim().split(/\d+\.\s+/);
+                
+                // Extract all additional references (skip the first empty split)
+                const references = [];
+                for (let i = 1; i < additionalParts.length; i++) {
+                    if (additionalParts[i].trim()) {
+                        references.push(formatSingleReference(additionalParts[i].trim(), i));
+                    }
+                }
+                
+                // Show only first 3 references initially
+                const initialReferences = references.slice(0, 3).join('');
+                const hiddenReferences = references.length > 3 ? references.slice(3).join('') : '';
+                
+                // Create the container with visible and hidden references
+                additionalVerses = `
+                    <div class="mt-4 pt-2 border-t border-emerald-200">
+                        <p class="text-emerald-700 font-semibold mb-2">مزید متعلقہ نتائج:</p>
+                        <div class="initial-references">
+                            ${initialReferences}
+                        </div>`;
+                
+                // Only add the button and hidden container if there are more than 3 references
+                if (references.length > 3) {
+                    additionalVerses += `
+                        <button class="mazeed-maloomat-btn" onclick="toggleAdditionalReferences(this)">
+                            مزید معلومات <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="additional-references">
+                            ${hiddenReferences}
+                        </div>`;
+                }
+                
+                additionalVerses += `</div>`;
+            }
+            
+            return mainVerse + additionalVerses;
+        } else {
+            // Single verse reference
+            return formatSingleVerse(text);
+        }
+    }
+    
+    // Helper function to format a single reference with index
+    function formatSingleReference(text, index) {
+        // Split the verse from the reference
+        const parts = text.split('📖');
+        
+        if (parts.length < 2) {
+            return ''; // Not a reference format we recognize
+        }
+        
+        const verseText = parts[0].trim();
+        const reference = parts[1].trim();
+        
+        // Create formatted HTML for a reference item
+        return `<div class="reference-item">
+                  <p class="reference-text">${verseText}</p>
+                  <p class="reference-source">📖 ${reference}</p>
+                </div>`;
+    }
+    
+    function formatSingleVerse(text) {
+        // Split the verse from the reference
+        const parts = text.split('📖');
+        
+        if (parts.length < 2) {
+            return text; // Not a reference format we recognize
+        }
+        
+        const verseText = parts[0].trim();
+        const reference = parts[1].trim();
+        
+        // Create formatted HTML
+        return `<div class="verse-container">
+                  <p class="verse-text text-gray-800 mb-3 leading-relaxed">${verseText}</p>
+                  <p class="verse-reference text-emerald-700 font-semibold text-sm">📖 ${reference}</p>
+                </div>`;
+    }
     
     function showTypingIndicator() {
         const typingDiv = document.createElement('div');
@@ -289,52 +384,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 820);
     }
     
-    // Add shake animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(5px); }
-            50% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-            100% { transform: translateX(0); }
-        }
-        .shake {
-            animation: shake 0.4s ease-in-out 2;
-        }
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-        }
-        
-        .typing-indicator span {
-            height: 8px;
-            width: 8px;
-            margin: 0 1px;
-            background-color: #9CA3AF;
-            border-radius: 50%;
-            display: inline-block;
-            opacity: 0.4;
-        }
-        
-        .typing-indicator span:nth-of-type(1) {
-            animation: 1s blink infinite 0.3333s;
-        }
-        .typing-indicator span:nth-of-type(2) {
-            animation: 1s blink infinite 0.6666s;
-        }
-        .typing-indicator span:nth-of-type(3) {
-            animation: 1s blink infinite 0.9999s;
-        }
-        
-        @keyframes blink {
-            50% {
-                opacity: 1;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-    
     // Make setQuestion available globally
     window.setQuestion = function(question) {
         if (isProcessing) return;
@@ -347,6 +396,27 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('chat-container').scrollIntoView({ 
                 behavior: 'smooth' 
             });
+        }
+    };
+
+    // Toggle function for Mazeed Maloomat button
+    window.toggleAdditionalReferences = function(button) {
+        const additionalReferences = button.nextElementSibling;
+        additionalReferences.classList.toggle('visible');
+        button.classList.toggle('active');
+        
+        // Change button text based on state
+        if (button.classList.contains('active')) {
+            button.innerHTML = 'چھپائیں <i class="fas fa-chevron-up"></i>';
+        } else {
+            button.innerHTML = 'مزید معلومات <i class="fas fa-chevron-down"></i>';
+        }
+        
+        // Scroll to make additional content visible if expanded
+        if (additionalReferences.classList.contains('visible')) {
+            setTimeout(() => {
+                additionalReferences.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
     };
     
@@ -400,8 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make createDefaultCategories available globally
     window.createDefaultCategories = createDefaultCategories;
     
-    // Resize handler for suggestions removed
-    
     // Add offline detection
     window.addEventListener('online', function() {
         document.body.classList.remove('offline');
@@ -410,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.removeAttribute('data-was-offline');
             loadDailyFact();
             loadCategories();
-            loadPopularQuestions();
             addMessage('آپ کا انٹرنیٹ کنکشن بحال ہو گیا ہے۔', 'bot', 'normal');
         }
     });
@@ -442,109 +509,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, {passive: false});
     
-    function formatVerseText(text) {
-        // Check if this contains Quranic references
-        if (!text.includes('📖')) {
-            return text; // Return as is if no references
+    // Add shake animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            50% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out 2;
+        }
+        .typing-indicator {
+            display: flex;
+            align-items: center;
         }
         
-        // Split by multiple verses if they exist
-        if (text.includes('**مزید متعلقہ نتائج:**')) {
-            const parts = text.split('**مزید متعلقہ نتائج:**');
-            const mainVerse = formatSingleVerse(parts[0].trim());
-            
-            // Format additional verses if they exist
-            let additionalVerses = '';
-            if (parts.length > 1 && parts[1].trim()) {
-                // Split additional results by numbered items
-                const additionalParts = parts[1].trim().split(/\d+\.\s+/);
-                additionalVerses = '<div class="mt-4 pt-2 border-t border-emerald-200">' +
-                                   '<p class="text-emerald-700 font-semibold mb-2">**مزید متعلقہ نتائج:**</p>';
-                
-                // Process each additional verse (skip the first empty split)
-                for (let i = 1; i < additionalParts.length; i++) {
-                    if (additionalParts[i].trim()) {
-                        additionalVerses += `<div class="mt-2 mb-3">${formatSingleVerse(additionalParts[i].trim())}</div>`;
-                    }
-                }
-                additionalVerses += '</div>';
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            margin: 0 1px;
+            background-color: #9CA3AF;
+            border-radius: 50%;
+            display: inline-block;
+            opacity: 0.4;
+        }
+        
+        .typing-indicator span:nth-of-type(1) {
+            animation: 1s blink infinite 0.3333s;
+        }
+        .typing-indicator span:nth-of-type(2) {
+            animation: 1s blink infinite 0.6666s;
+        }
+        .typing-indicator span:nth-of-type(3) {
+            animation: 1s blink infinite 0.9999s;
+        }
+        
+        @keyframes blink {
+            50% {
+                opacity: 1;
             }
-            
-            return mainVerse + additionalVerses;
-        } else {
-            // Single verse reference
-            return formatSingleVerse(text);
         }
-    }
-    
-    function formatSingleVerse(text) {
-        // Split the verse from the reference
-        const parts = text.split('📖');
-        
-        if (parts.length < 2) {
-            return text; // Not a reference format we recognize
-        }
-        
-        const verseText = parts[0].trim();
-        const reference = parts[1].trim();
-        
-        // Create formatted HTML
-        return `<div class="verse-container">
-                  <p class="verse-text text-gray-800 mb-3 leading-relaxed">${verseText}</p>
-                  <p class="verse-reference text-emerald-700 font-semibold text-sm">📖 ${reference}</p>
-                </div>`;
-    }
-    
-    function addMessage(text, sender, type = 'normal') {
-        // Create message element
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'flex items-start mb-3 chat-message';
-        
-        if (sender === 'user') {
-            messageDiv.classList.add('justify-end');
-            messageDiv.innerHTML = `
-                <div class="ml-2 py-2 px-3 bg-blue-100 user-message max-w-[75%] md:max-w-xs shadow-sm">
-                    <p class="text-gray-800 text-sm">${text}</p>
-                </div>
-                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
-                    <i class="fas fa-user"></i>
-                </div>
-            `;
-        } else {
-            let backgroundColor;
-            let icon;
-            
-            if (type === 'fact') {
-                backgroundColor = 'bg-purple-100';
-                icon = 'fa-lightbulb';
-            } else if (type === 'error') {
-                backgroundColor = 'bg-red-100';
-                icon = 'fa-exclamation-circle';
-            } else {
-                backgroundColor = 'bg-emerald-100';
-                icon = 'fa-robot';
-            }
-            
-            // Format Quranic references if needed
-            let formattedText = text;
-            if (type !== 'fact' && type !== 'error') {
-                formattedText = formatVerseText(text);
-            }
-            
-            messageDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white flex-shrink-0 ms-3">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="mr-2 py-2 px-3 ${backgroundColor} bot-message max-w-[75%] md:max-w-xs shadow-sm">
-                    <div class="text-gray-800 text-sm">${formattedText}</div>
-                </div>
-            `;
-        }
-        
-        // Add message to chat
-        chatMessages.appendChild(messageDiv);
-        
-        // Ensure the chat container scrolls to the bottom after each new message
-        scrollToBottom();
-    }
+    `;
+    document.head.appendChild(style);
 });
