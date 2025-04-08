@@ -333,7 +333,7 @@ html[lang="ur"], body, .text-gray-800, .verse-text, #question-input, .category-q
 
 /* Send button styling */
 #send-button {
-    display: flex;
+    display: flex !important; /* Ensure it's always displayed */
     align-items: center;
     justify-content: center;
     background-color: #059669;
@@ -344,6 +344,7 @@ html[lang="ur"], body, .text-gray-800, .verse-text, #question-input, .category-q
     transition: background-color 0.2s;
     min-height: 100%;
     min-width: 55px;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 #send-button:hover {
@@ -355,8 +356,8 @@ html[lang="ur"], body, .text-gray-800, .verse-text, #question-input, .category-q
 }
 
 .fa-paper-plane, .fa-robot, .fa-user {
-    display: inline-block;
-    visibility: visible;
+    display: inline-block !important;
+    visibility: visible !important;
     font-size: 1rem;
 }
 
@@ -378,6 +379,7 @@ html[lang="ur"], body, .text-gray-800, .verse-text, #question-input, .category-q
     color: #374151; /* darker text for better visibility */
     background-color: rgba(255, 255, 255, 0.8);
     text-shadow: 0 0 1px rgba(255, 255, 255, 0.3);
+    width: calc(100% - 60px); /* Leave space for the button */
 }
 
 #question-input::placeholder {
@@ -398,6 +400,7 @@ html[lang="ur"], body, .text-gray-800, .verse-text, #question-input, .category-q
     border-width: 2px;
     border-radius: 0.5rem;
     overflow: hidden;
+    display: flex !important; /* Ensure flex layout */
 }
 
 .focus-within\:border-emerald-500:focus-within {
@@ -465,22 +468,30 @@ html[lang="ur"], body, .text-gray-800, .verse-text, #question-input, .category-q
     
     /* Make input field bigger and more visible on mobile */
     #question-input {
-        min-height: 70px;
+        min-height: 60px;
         font-size: 1.2rem;
         line-height: 2.2;
-        padding: 1rem 1.25rem;
+        padding: 0.75rem 1rem;
+        width: calc(100% - 60px); /* Leave space for the button */
     }
     
     /* Larger input container on mobile */
     .flex.items-center.bg-gray-50 {
-        min-height: 76px;
+        min-height: 68px;
         margin-top: 1.5rem;
+        display: flex !important;
     }
     
-    /* Make send button larger on mobile */
+    /* Fix send button on mobile */
     #send-button {
-        padding: 0.75rem 1.25rem;
+        padding: 0.75rem;
         font-size: 1.1rem;
+        min-width: 50px;
+        height: 100%;
+        position: relative;
+        right: 0;
+        margin-left: auto;
+        display: flex !important;
     }
     
     #send-button .fa-paper-plane {
