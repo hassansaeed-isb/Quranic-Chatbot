@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add message to chat
         chatMessages.appendChild(messageDiv);
         
-        // Scroll to bottom with a smooth animation
+        // Ensure the chat container scrolls to the bottom after each new message
         scrollToBottom();
     }
 });

@@ -228,7 +228,7 @@
 /* Ensure consistent messaging styling */
 .bot-message, .user-message {
     max-width: 80%;
-    padding: 0.75rem 1rem;
+    padding: .75rem 1rem;
     border-radius: 0.5rem;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -313,8 +313,43 @@
     font-weight: 600;
 }
 
-/* Ensure the bot message container can handle the formatting */
+
+/* Adjust the padding and margin for bot messages */
 .bot-message {
     max-width: 90% !important;
     width: auto;
+    padding: 0.75rem 1rem; /* Added more padding for spacing around text */
+    margin-bottom: 1rem; /* Added margin for space between messages */
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word; /* Ensures long words break properly */
 }
+
+/* Additional adjustments for better readability */
+.bot-message .text-gray-800 {
+    line-height: 1.5; /* Ensures better line spacing within messages */
+    font-size: 1rem; /* Ensures consistent text size */
+}
+
+/* Prevent text from running to the edges */
+.bot-message .mr-2 {
+    padding-right: 1rem; /* Ensure there is space on the right side */
+}
+
+/* Spacing for all chat messages (user and bot) */
+.chat-message {
+    display: flex !important;
+    align-items: flex-start;
+    margin-bottom: 1rem; /* Added margin for spacing between all chat messages */
+    width: 100%;
+}
+
+/* Added additional spacing to user and bot messages */
+.user-message, .bot-message {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0.5rem; /* Added margin between individual messages */
+}
+

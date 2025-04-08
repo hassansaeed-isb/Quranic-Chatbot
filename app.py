@@ -395,13 +395,13 @@ def detect_specific_questions(user_input):
     return None
 
 def search_quran(query):
-    """Search Quran using the loaded model and include other relevant matches"""
+    """Search Quran using the loaded model and include all relevant matches"""
     if not query or not model_wrapper.loaded:
         return None
         
     try:
         # Get search results
-        results = model_wrapper.search(query, top_k=3)
+        results = model_wrapper.search(query)
         
         if "error" in results:
             logger.warning(f"Search error: {results['error']}")
@@ -412,14 +412,13 @@ def search_quran(query):
             # Format the answer with the verse and reference (improved spacing)
             answer = f"{primary['verse']}\n\n📖 {primary['reference']}"
             
-            # Include other matches in the answer if available
-            other_matches = []
-            if results.get("other_matches"):
+            # Include all matches in the answer if available
+            other_matches = results.get("other_matches", [])
+            if other_matches:
                 answer += "\n\n**مزید متعلقہ نتائج:**\n"
-                for i, match in enumerate(results["other_matches"], 1):
+                for i, match in enumerate(other_matches, 1):
                     other_match_text = f"{i}. {match['verse']}\n📖 {match['reference']}"
                     answer += other_match_text + "\n\n"
-                    other_matches.append(match)
             
             # Create related suggestions from other matches
             suggestions = []
