@@ -130,6 +130,100 @@ PROPHET_QUESTIONS = {
     }
 }
 
+HARD_CODED_FAQS = {
+    "namaz_command": {
+        "patterns": [
+            "نماز کا حکم قرآن کی کس آیت میں ہے", 
+            "قرآن میں نماز کا حکم", 
+            "نماز قرآن میں کہاں فرض ہے"
+        ],
+        "answer": """قرآن میں نماز کا حکم کئی جگہوں پر آیا ہے۔ ایک واضح آیت سورۃ البقرہ (2:43) میں ہے:
+"وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ وَارْكَعُوا مَعَ الرَّاكِعِينَ"
+(نماز قائم کرو اور زکوٰۃ دو اور رکوع کرنے والوں کے ساتھ رکوع کرو۔)"""
+    },
+    "zakat_who": {
+        "patterns": [
+            "زکوٰۃ کن پر فرض ہے", 
+            "زکوۃ قرآن میں کن پر فرض ہے", 
+            "کن پر زکوۃ فرض ہے"
+        ],
+        "answer": """زکوٰۃ ہر مسلمان بالغ، عاقل، آزاد اور صاحبِ نصاب فرد پر فرض ہے۔ نصاب کا مطلب ہے کہ اس کے پاس اتنی دولت ہو جو شریعت کے مقرر کردہ نصاب سے زیادہ ہو اور اس پر ایک سال گزر چکا ہو۔ قرآن میں سورۃ التوبہ (9:60) میں زکوٰۃ کے مستحقین کا بھی ذکر آیا ہے۔"""
+    },
+    "hajj_conditions": {
+        "patterns": [
+            "حج کی فرضیت کی شرائط کیا ہیں", 
+            "حج کن شرائط پر فرض ہے", 
+            "حج کب فرض ہوتا ہے"
+        ],
+        "answer": """حج کی فرضیت کی شرائط یہ ہیں:
+1. مسلمان ہونا
+2. عاقل اور بالغ ہونا
+3. آزاد ہونا (غلام نہ ہونا)
+4. جسمانی اور مالی استطاعت رکھنا
+5. راستہ محفوظ ہونا
+قرآن میں سورۃ آل عمران (3:97) میں فرمایا گیا ہے:
+"اور اللہ کے لیے لوگوں پر اس گھر کا حج فرض ہے جو بھی وہاں تک جانے کی استطاعت رکھتا ہو۔" """
+    },
+    "roza_purpose": {
+        "patterns": [
+            "قرآن میں روزے کا مقصد کیا ہے", 
+            "روزوں کا مقصد قرآن میں", 
+            "قرآن میں روزے کیوں فرض ہیں"
+        ],
+        "answer": """قرآن میں روزوں کا مقصد تقویٰ حاصل کرنا بیان کیا گیا ہے۔ سورۃ البقرہ (2:183) میں اللہ تعالیٰ فرماتے ہیں:
+"يَا أَيُّهَا الَّذِينَ آمَنُوا كُتِبَ عَلَيْكُمُ الصِّيَامُ كَمَا كُتِبَ عَلَى الَّذِينَ مِن قَبْلِكُمْ لَعَلَّكُمْ تَتَّقُونَ"
+(اے ایمان والو! تم پر روزے فرض کیے گئے ہیں جس طرح تم سے پہلے لوگوں پر کیے گئے تھے تاکہ تم تقویٰ حاصل کرو۔)"""
+    },
+    "hajj_in_quran": {
+        "patterns": [
+            "قرآن میں حج کا ذکر کہاں آیا ہے", 
+            "قرآن میں حج کا بیان", 
+            "حج کا ذکر قرآن میں"
+        ],
+        "answer": """قرآن میں حج کا ذکر متعدد مقامات پر آیا ہے، خاص طور پر سورۃ البقرہ (2:196-203) اور سورۃ آل عمران (3:97) میں۔ سورۃ البقرہ میں حج کے ارکان اور احکامات تفصیل سے بیان کیے گئے ہیں، اور آل عمران میں حج کی فرضیت کا حکم آیا ہے۔"""
+    },
+    "shortest_surah": {
+        "patterns": [
+            "سب سے چھوٹی سورۃ کون سی ہے",
+            "قرآن کی سب سے چھوٹی سورۃ",
+            "سب سے مختصر سورۃ کون سی ہے"
+        ],
+        "answer": """قرآن پاک کی سب سے چھوٹی سورۃ سورۃ الکوثر ہے۔ یہ صرف تین آیات اور دس الفاظ پر مشتمل ہے۔ سورۃ الکوثر قرآن کی 108ویں سورۃ ہے اور اس میں اللہ تعالیٰ نے نبی اکرم ﷺ کو خیرِ کثیر عطا کرنے کی خوشخبری دی ہے۔"""
+    },
+
+    "number_of_sajdahs": {
+        "patterns": [
+            "قرآن میں کتنے سجدے ہیں",
+            "قرآن میں سجدے کی آیات کتنی ہیں",
+            "کتنے مقامات پر سجدہ ہے"
+        ],
+        "answer": """قرآن میں کل 14 سجدہ تلاوت کے مقامات ہیں۔ جب ان آیات کی تلاوت کی جاتی ہے تو سجدہ کرنا مستحب ہے۔ بعض فقہی مسالک کے مطابق سجدے کی تعداد میں تھوڑا اختلاف بھی ہے، لیکن عمومی طور پر 14 مقامات تسلیم کیے جاتے ہیں۔"""
+    },
+
+    
+    "first_sajdah": {
+        "patterns": [
+            "قرآن میں پہلا سجدہ کہاں ہے",
+            "سب سے پہلا سجدہ قرآن میں کہاں ہے",
+            "قرآن میں پہلا سجدہ کس سورۃ میں ہے"
+        ],
+        "answer": """قرآن پاک میں پہلا سجدہ سورۃ الأعراف (7:206) میں ہے:
+"إِنَّ الَّذِينَ عِندَ رَبِّكَ لَا يَسْتَكْبِرُونَ عَنْ عِبَادَتِهِ وَيُسَبِّحُونَهُ وَلَهُ يَسْجُدُونَ"
+(بیشک جو تیرے رب کے پاس ہیں وہ اس کی عبادت سے تکبر نہیں کرتے، اور اسی کی تسبیح کرتے ہیں اور اسی کو سجدہ کرتے ہیں۔)"""
+    },
+
+    "last_sajdah": {
+        "patterns": [
+            "قرآن میں آخری سجدہ کہاں ہے",
+            "سب سے آخری سجدہ قرآن میں کہاں ہے",
+            "قرآن میں آخری سجدہ کس سورۃ میں ہے"
+        ],
+        "answer": """قرآن کا آخری سجدہ سورۃ العلق (96:19) میں ہے:
+"كَلَّا لَا تُطِعْهُ وَاسْجُدْ وَاقْتَرِبْ"
+(ہرگز نہیں! اس کی بات نہ مانو اور سجدہ کرو اور اللہ کے قریب ہو جاؤ۔)"""
+    }
+}
+
 # Intent detection patterns
 GREETING_PATTERNS = [
     "السلام علیکم", "سلام", "آداب", "ہیلو", "ہائے", "اسلام علیکم", "جی ", 
@@ -383,8 +477,17 @@ def detect_specific_questions(user_input):
     # Normalize user input for matching
     normalized_input = preprocess_text(user_input).lower()
     
-    # Check each question pattern
+    # Check each question pattern in prophet questions
     for q_type, data in PROPHET_QUESTIONS.items():
+        for pattern in data["patterns"]:
+            if pattern in normalized_input:
+                return {
+                    "type": q_type,
+                    "answer": data["answer"]
+                }
+    
+    # Check each question pattern in hardcoded FAQs
+    for q_type, data in HARD_CODED_FAQS.items():
         for pattern in data["patterns"]:
             if pattern in normalized_input:
                 return {
@@ -634,12 +737,13 @@ def daily_fact():
     return jsonify({'facts': facts})
 
 @app.route('/categories')
+@app.route('/categories')
 def get_categories():
     """Return categories and their questions"""
     qa_data = load_qa_data()
     result = {}
     
-    # Group questions by category
+    # Group questions by category from database
     category_questions = {}
     for question in qa_data.get("questions", []):
         if "category" in question:
@@ -648,7 +752,7 @@ def get_categories():
                 category_questions[category] = []
             category_questions[category].append(question["question"])
     
-    # Create result object
+    # Create result object for database categories
     for category, questions in category_questions.items():
         result[category] = {
             "title": CATEGORY_TITLES.get(category, category),
@@ -656,7 +760,22 @@ def get_categories():
             "questions": questions[:4]  # Limit to 4 questions per category
         }
     
+    # Now add HARD_CODED categories manually
+
+    result["arkan_islam"] = {
+        "title": "ارکان اسلام",
+        "icon": "fa-mosque",
+        "questions": [
+            "نماز کا حکم قرآن کی کس آیت میں ہے؟",
+            "زکوٰۃ کن پر فرض ہے؟",
+            "قرآن میں روزے کا مقصد کیا ہے؟",
+            "حج کی فرضیت کی شرائط کیا ہیں؟"
+        ]
+    }
+
+    
     return jsonify(result)
+
 
 @app.route('/search', methods=['POST'])
 def search():
